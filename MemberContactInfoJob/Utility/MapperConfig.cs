@@ -16,18 +16,20 @@ namespace MemberContactInfoJob.Utility
             //Provide all the Mapping Configuration
             var config = new MapperConfiguration(cfg =>
             {
-                //Configuring Employee and EmployeeDTO
+                //Configuring PostDischargeInfo to AddContactsRequest
                 cfg.CreateMap<PostDischargeInfo, AddContactsRequest>()
-                    .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NhMemberId))
-                    .ForPath(acr => acr.Data.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+                    .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
+                    .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(acr => acr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
-                    .ForPath(acr => acr.Data.Address, opt => opt.MapFrom(src => src.Address))
+                    .ForPath(acr => acr.Data.Address, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Address1) ? src.Address2 : src.Address1))
+                    .ForPath(acr => acr.Data.Region, opt => opt.MapFrom(src => src.Region))
+                    .ForPath(acr => acr.Data.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNbr))
                     .ForPath(acr => acr.Data.CarrierName, opt => opt.MapFrom(src => src.CarrierName))
                     .ForPath(acr => acr.Data.LoadDate, opt => opt.MapFrom(src => src.LoadDate))
                     .ForPath(acr => acr.Data.DischargeDate, opt => opt.MapFrom(src => src.DischargeDate))
+                    .ForPath(acr => acr.Data.DayCount, opt => opt.MapFrom(src => src.DayCount))
                     .ForPath(acr => acr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
-                    .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal))
-                    .ForPath(acr => acr.Data.DayCount, opt => opt.MapFrom(src => src.DayCount));
+                    .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
                 //Any Other Mapping Configuration ....
             });
             //Create an Instance of Mapper and return that Instance

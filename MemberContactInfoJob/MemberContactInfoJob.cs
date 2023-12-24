@@ -28,7 +28,7 @@ namespace MemberContactInfoJob
     {
         // Visit https://aka.ms/sqlbindingsinput to learn how to use this input binding
         [FunctionName("MemberContactInfoJob")]
-        public static async Task Run([TimerTrigger("5,15,25,35,45,55 * * * * *")] TimerInfo myTimer, ILogger logger) {
+        public static async Task Run([TimerTrigger("0 0 0 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger) {
 
             if (myTimer.IsPastDue)
             {
@@ -43,16 +43,34 @@ namespace MemberContactInfoJob
             string connString = "Data Source=tcp:nhonlineordersql.database.windows.net;Initial Catalog=NHCRM_TEST2;User Id=NHOOAdmin;Password=nH3@r!ng321;Connect Timeout=0;Encrypt=False;TrustServerCertificate=True;ApplicationIntent=ReadWrite;MultiSubnetFailover=False;MultipleActiveResultSets=true";
 
             //Connection
-            using (SqlConnection conn = new(connString))
+            using SqlConnection conn = new(connString);
+            string sql = "select * from provider.postdischargeinfo;";
+            var queryResult = await conn.QueryAsync<PostDischargeInfo>(sql);
+            logger.LogInformation($"{JsonConvert.SerializeObject(queryResult)}");
+
+            foreach (PostDischargeInfo pdi in queryResult)
             {
-                string sql = "select * from orders.PdiForGenesys;";
-                var queryResult = await conn.QueryAsync<PostDischargeInfo>(sql);
+                object result = new();
 
-                // CALL GENESYS API TO SEND CONTACT LIST
-                var result = await AddContactsToContactList(queryResult, token);
+                // ADD CONTACT
+                if (pdi.ShouldAddToContactList == 1)
+                {
+                    result = await AddContactsToContactList(queryResult, token);
+                }
 
-                // CALL GENESYS API TO UPDATE CONTACT
-                var result2 = await UpdateContact(queryResult, token);
+                // UPDATE CONTACT
+                if (pdi.ShouldUpdateInContactList == 1)
+                {
+                    result = await UpdateContact(queryResult, token);
+                }
+
+                // REMOVE CONTACT
+                if (pdi.ShouldRemoveFromContactList == 1)
+                {
+                    result = await DeleteContactsFromContactList(queryResult, token);
+                }
+
+                logger.LogInformation($"{JsonConvert.SerializeObject(result)}");
             }
 
             //return new OkObjectResult(result);
@@ -61,7 +79,7 @@ namespace MemberContactInfoJob
         public static async Task<AccessTokenResponse> AuthenticateAsync()
         {
             using HttpClient client = new HttpClient();
-            Uri baseUrl = new Uri("https://login.usw2.pure.cloud/oauth/token");
+            Uri baseUrl = new("https://login.usw2.pure.cloud/oauth/token");
             AccessTokenRequest atr = new();
             var form = new Dictionary<string, string>()
             {
