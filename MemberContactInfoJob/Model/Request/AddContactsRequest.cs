@@ -9,9 +9,11 @@ namespace MemberContactInfoJob.Model.Request
     // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
     public class Data
     {
-        public string TransactionId = Guid.NewGuid().ToString();
+        // TODO: remove later
+        public string TransactionId => Guid.NewGuid().ToString();
         public string NhMemberId { get; set; }
         public string MemberName { get; set; }
+        public string Language { get; set; }
         public string Address { get; set; }
         public string Region { get; set; }
         public string PhoneNumber { get; set; }
@@ -35,7 +37,7 @@ namespace MemberContactInfoJob.Model.Request
 
     public class AddContactsRequest
     {
-        public string Id = Guid.NewGuid().ToString();
+        public string Id { get; set; }
         public string ContactListId = "8518a928-6c33-491e-b43a-bf98ec790f7b";
         public Data Data { get; set; }
         public bool Callable => true;

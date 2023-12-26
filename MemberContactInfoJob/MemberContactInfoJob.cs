@@ -1,21 +1,19 @@
-using AutoMapper;
 using Dapper;
 using MemberContactInfoJob.Model.Request;
 using MemberContactInfoJob.Model.Response;
 using MemberContactInfoJob.Utility;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
-using System.Net.Http.Formatting;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -24,61 +22,88 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MemberContactInfoJob
 {
-    public static class MemberContactInfoJob
+    public class MemberContactInfoJob
     {
+        private readonly ILogger<MemberContactInfoJob> _logger;
+        private readonly HttpClient _httpClient;
+
+        public MemberContactInfoJob(ILogger<MemberContactInfoJob> logger, HttpClient httpClient)
+        {
+            _logger = logger;
+            _httpClient = httpClient;
+        }
+
         // Visit https://aka.ms/sqlbindingsinput to learn how to use this input binding
-        [FunctionName("MemberContactInfoJob")]
-        public static async Task Run([TimerTrigger("0 0 0 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger) {
+        [FunctionName("ProcessEnglishContacts")]
+        public async Task ProcessEnglishContacts([TimerTrigger("0 0 0 * * *", RunOnStartup = true)] TimerInfo myTimer) {
+
+            //Test();
 
             if (myTimer.IsPastDue)
             {
-                logger.LogInformation("Timer is running late!");
+                _logger.LogInformation("Timer is running late!");
             }
-            logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
             AccessTokenResponse token = await AuthenticateAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 
-            // GET MEMBER DISCHARGE INFO
-            //Query to fetch data
-            
             string connString = "Data Source=tcp:nhonlineordersql.database.windows.net;Initial Catalog=NHCRM_TEST2;User Id=NHOOAdmin;Password=nH3@r!ng321;Connect Timeout=0;Encrypt=False;TrustServerCertificate=True;ApplicationIntent=ReadWrite;MultiSubnetFailover=False;MultipleActiveResultSets=true";
 
             //Connection
             using SqlConnection conn = new(connString);
-            string sql = "select * from provider.postdischargeinfo;";
-            var queryResult = await conn.QueryAsync<PostDischargeInfo>(sql);
-            logger.LogInformation($"{JsonConvert.SerializeObject(queryResult)}");
+            //string sql = "select * from provider.postdischargeinfo where language = 'ENG';";
+            string sql = "select * from meals.GenesysIntegration gi join provider.postdischargeinfo pdi on gi.postdischargeid = pdi.postdischargeid where gi.language = 'ENG';";
+            var contactsToProcess = await conn.QueryAsync<PostDischargeGenesysInfo>(sql);
+            _logger.LogInformation($"{JsonConvert.SerializeObject(contactsToProcess)}");
 
-            foreach (PostDischargeInfo pdi in queryResult)
+            string contactListId = "0226dcdf-fa47-4cd2-a81c-5af821d899e2";
+
+            var refreshResult = await conn.QueryAsync("EXEC meals.RefreshDayCountAndAttemptCountToday;");
+
+            // PROCESS IN BULK
+            var contactsToAdd = contactsToProcess.TakeWhile(c => c.ShouldAddToContactList == 1 && c.IsDeletedFromContactList == 0);
+            var contactsToUpdate = contactsToProcess.TakeWhile(c => c.ShouldUpdateInContactList == 1 && c.IsDeletedFromContactList == 0);
+            var contactsToRemove = contactsToProcess.TakeWhile(c => c.ShouldRemoveFromContactList == 1 && c.IsDeletedFromContactList == 0);
+
+            // BULK GET CONTACTS
+            //var getResult = await GetContactsFromContactList(token, contactListId);
+
+            // BULK ADD CONTACTS
+            // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+            IEnumerable<AddContactsResponse> addResult;
+            IEnumerable<UpdateContactsResponse> updateResult;
+            DeleteContactsResponse removeResult;
+
+            if (contactsToAdd.Any())
             {
-                object result = new();
-
-                // ADD CONTACT
-                if (pdi.ShouldAddToContactList == 1)
-                {
-                    result = await AddContactsToContactList(queryResult, token);
-                }
-
-                // UPDATE CONTACT
-                if (pdi.ShouldUpdateInContactList == 1)
-                {
-                    result = await UpdateContact(queryResult, token);
-                }
-
-                // REMOVE CONTACT
-                if (pdi.ShouldRemoveFromContactList == 1)
-                {
-                    result = await DeleteContactsFromContactList(queryResult, token);
-                }
-
-                logger.LogInformation($"{JsonConvert.SerializeObject(result)}");
+                addResult = await AddContactsToContactList(contactsToAdd, contactListId);
             }
 
-            //return new OkObjectResult(result);
+            // BULK UPDATE CONTACTS
+            // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+            if (contactsToUpdate.Any())
+            {
+                updateResult = await UpdateContactsInContactList(contactsToUpdate, contactListId);
+            }
+
+            // BULK REMOVE CONTACTS
+            // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+            if (contactsToRemove.Any())
+            {
+                removeResult = await DeleteContactsFromContactList(contactsToRemove, contactListId);
+            }
         }
 
-        public static async Task<AccessTokenResponse> AuthenticateAsync()
+        private async void Test()
         {
-            using HttpClient client = new HttpClient();
+            var url = "https://api.usw2.pure.cloud/api/v2/downloads/6217472fc7e5329f";
+            var response = await _httpClient.GetByteArrayAsync(url);
+            File.WriteAllBytes(@"C:\Temp\Downloadedfile.csv", response);
+            string t = "";
+        }
+
+        public async Task<AccessTokenResponse> AuthenticateAsync()
+        {
             Uri baseUrl = new("https://login.usw2.pure.cloud/oauth/token");
             AccessTokenRequest atr = new();
             var form = new Dictionary<string, string>()
@@ -92,29 +117,145 @@ namespace MemberContactInfoJob
             if (!string.IsNullOrWhiteSpace(cachedToken))
                 return cachedToken;*/
 
-            HttpResponseMessage result = await client.PostAsync(baseUrl, new FormUrlEncodedContent(form));
+            HttpResponseMessage result = await _httpClient.PostAsync(baseUrl, new FormUrlEncodedContent(form));
             result.EnsureSuccessStatusCode();
-           /* Stream response = await result.Content.ReadAsStreamAsync();
-            AccessTokenResponse token = JsonSerializer.Deserialize<AccessTokenResponse>(response, new JsonSerializerOptions(JsonSerializerDefaults.Web));*/
             string response = await result.Content.ReadAsStringAsync();
             AccessTokenResponse token = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
-            SetCacheToken(token);
+            //SetCacheToken(token);
             return token;
         }
 
-        private static StringContent GenerateBody()
+        private async Task<GetContactsResponse> GetContactsFromContactList(AccessTokenResponse token, string contactListId)
         {
-            AccessTokenRequest atr = new();
-            var body = JsonConvert.SerializeObject(atr);
-            /*JsonSerializer.Serialize(atr,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });*/
-            return new StringContent(body, Encoding.UTF8, "application/x-www-form-urlencoded");
+            Uri baseUrl = new($"https://api.usw2.pure.cloud/api/v2/outbound/contactlists/{contactListId}/export?download=true");
+
+            HttpResponseMessage response = await _httpClient.GetAsync(baseUrl);
+            string data = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<GetContactsResponse>(data);
+        }
+        private async Task<GetContactsResponse> GetContactsFromContactList_Export(AccessTokenResponse token, string contactListId)
+        {
+            Uri baseUrl = new($"https://api.usw2.pure.cloud/api/v2/outbound/contactlists/{contactListId}/contacts?priority=true");
+
+            HttpResponseMessage response = await _httpClient.GetAsync(baseUrl);
+            string data = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<GetContactsResponse>(data);
         }
 
-        private static void SetCacheToken(AccessTokenResponse accessTokenResponse)
+
+        private async Task UpdateGenesysInfoTable()
+        {
+
+        }
+
+        private async Task<IEnumerable<AddContactsResponse>> AddContactsToContactList(IEnumerable<PostDischargeGenesysInfo> contactsToAdd, string contactListId)
+        {
+            Uri baseUrl = new($"https://api.usw2.pure.cloud/api/v2/outbound/contactlists/{contactListId}/contacts?priority=true");
+
+            var mapper = MapperConfig.InitializeAutomapper();
+            IEnumerable<AddContactsRequest> acr = mapper.Map<List<AddContactsRequest>>(contactsToAdd);
+
+            var body = JsonConvert.SerializeObject(acr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+            StringContent sc = new(body, Encoding.UTF8, "application/json");
+
+            int count = 0;
+            int maxTries = 3;
+            while (true) {
+                try {
+                    HttpResponseMessage response = await _httpClient.PostAsync(baseUrl, sc);
+                    response.EnsureSuccessStatusCode();
+                    string data = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<IEnumerable<AddContactsResponse>>(data);
+                }
+                catch (HttpRequestException ex)
+                {
+                    if (++count >= maxTries) throw ex;
+                }
+            }
+        }
+
+        private async Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeGenesysInfo> contactsToAdd, string contactListId)
+        {
+            Uri baseUrl = new($"https://api.usw2.pure.cloud/api/v2/outbound/contactlists/{contactListId}/contacts?priority=true");
+
+            var mapper = MapperConfig.InitializeAutomapper();
+            IEnumerable<UpdateContactsRequest> ucr = mapper.Map<List<UpdateContactsRequest>>(contactsToAdd);
+
+            var body = JsonConvert.SerializeObject(ucr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+            StringContent sc = new StringContent(body, Encoding.UTF8, "application/json");
+
+            int count = 0;
+            int maxTries = 3;
+            while (true)
+            {
+                try
+                {
+                    HttpResponseMessage response = await _httpClient.PostAsync(baseUrl, sc);
+                    response.EnsureSuccessStatusCode();
+                    string data = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<IEnumerable<UpdateContactsResponse>>(data);
+                }
+                catch (HttpRequestException ex)
+                {
+                    if (++count >= maxTries) throw ex;
+                }
+            }
+        }
+
+        private async Task<DeleteContactsResponse> DeleteContactsFromContactList(IEnumerable<PostDischargeGenesysInfo> contactsToDelete, string contactListId)
+        {
+            string baseUrl = $"https://api.usw2.pure.cloud/api/v2/outbound/contactlists/{contactListId}/contacts?contactIds=";
+
+            string contactIds = "";
+            foreach (var contact in contactsToDelete)
+            {
+                contactIds += $"{contact.PostDischargeId},";
+            }
+            contactIds = contactIds.TrimEnd(',');
+            Uri completeUrl = new(baseUrl + contactIds);
+
+            int count = 0;
+            int maxTries = 3;
+            while (true)
+            {
+                try
+                {
+                    HttpResponseMessage response = await _httpClient.DeleteAsync(completeUrl);
+                    response.EnsureSuccessStatusCode();
+                    string data = await response.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<DeleteContactsResponse>(data);
+                }
+                catch (HttpRequestException ex)
+                {
+                    if (++count >= maxTries) throw ex;
+                }
+            }
+        }
+
+        private async Task<IEnumerable<AddContactsRequest>> Map(IEnumerable<GenesysIntegrationInfo> dqr)
+        {
+            //var config = new MapperConfiguration(cfg => cfg.CreateMap<IEnumerable<DatabaseQueryResult>, List<AddContactsRequest>>());
+            //var mapper = new Mapper(config);
+            var mapper = MapperConfig.InitializeAutomapper();
+            return mapper.Map<List<AddContactsRequest>>(dqr);
+        }
+
+        private async Task<StringContent> GenerateBody(IEnumerable<GenesysIntegrationInfo> dqr)
+        {
+            IEnumerable<AddContactsRequest> acr = await Map(dqr);
+            var body = JsonConvert.SerializeObject(acr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+            return new StringContent(body, Encoding.UTF8, "application/json");
+        }
+
+        public T DeserializeResponse<T>(string response)
+        {
+            return JsonSerializer.Deserialize<T>(response, new JsonSerializerOptions{
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+        }
+
+        private void SetCacheToken(AccessTokenResponse accessTokenResponse)
         {
             //In a real-world application we should store the token in a cache service and set an TTL.
             Environment.SetEnvironmentVariable("token", accessTokenResponse.AccessToken);
@@ -125,96 +266,43 @@ namespace MemberContactInfoJob
             //In a real-world application, we should retrieve the token from a cache service.
             return Environment.GetEnvironmentVariable("token");
         }
-
-        private static async Task<AddContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo> queryResult, AccessTokenResponse token)
-        {
-            using HttpClient client = new HttpClient();
-            Uri baseUrl = new("https://api.usw2.pure.cloud/api/v2/outbound/contactlists/8518a928-6c33-491e-b43a-bf98ec790f7b/contacts?priority=true");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-
-            var mapper = MapperConfig.InitializeAutomapper();
-            IEnumerable<AddContactsRequest> acr = mapper.Map<List<AddContactsRequest>>(queryResult);
-
-            var body = JsonConvert.SerializeObject(acr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-            StringContent hc = new StringContent(body, Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await client.GetAsync(baseUrl);
-            string data = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<AddContactsResponse>(data);
-        }
-
-        private static async Task<AddContactsResponse> AddContactsToContactList(IEnumerable<PostDischargeInfo> queryResult, AccessTokenResponse token)
-        {
-            using HttpClient client = new HttpClient();
-            Uri baseUrl = new("https://api.usw2.pure.cloud/api/v2/outbound/contactlists/8518a928-6c33-491e-b43a-bf98ec790f7b/contacts?priority=true");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-
-            var mapper = MapperConfig.InitializeAutomapper();
-            IEnumerable<AddContactsRequest> acr = mapper.Map<List<AddContactsRequest>>(queryResult);
-
-            var body = JsonConvert.SerializeObject(acr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-            StringContent hc = new StringContent(body, Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await client.PostAsync(baseUrl, hc);
-            string data = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<AddContactsResponse>(data);
-        }
-
-        private static async Task<UpdateContactResponse> UpdateContact(IEnumerable<PostDischargeInfo> queryResult, AccessTokenResponse token)
-        {
-            using HttpClient client = new HttpClient();
-            Uri baseUrl = new($"https://api.usw2.pure.cloud/api/v2/outbound/contactlists/8518a928-6c33-491e-b43a-bf98ec790f7b/contacts/1");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-
-            var mapper = MapperConfig.InitializeAutomapper();
-            IEnumerable<UpdateContactRequest> ucr = mapper.Map<List<UpdateContactRequest>>(queryResult);
-
-            var body = JsonConvert.SerializeObject(ucr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-            StringContent sc = new StringContent(body, Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await client.PutAsync(baseUrl, sc);
-            string data = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<UpdateContactResponse>(data);
-        }
-
-        private static async Task<AddContactsResponse> DeleteContactsFromContactList(IEnumerable<PostDischargeInfo> queryResult, AccessTokenResponse token)
-        {
-            using HttpClient client = new HttpClient();
-            Uri baseUrl = new Uri("https://api.usw2.pure.cloud/api/v2/outbound/contactlists/8518a928-6c33-491e-b43a-bf98ec790f7b/contacts?contactIds=1");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-
-            var mapper = MapperConfig.InitializeAutomapper();
-            IEnumerable<AddContactsRequest> acr = mapper.Map<List<AddContactsRequest>>(queryResult);
-
-            var body = JsonConvert.SerializeObject(acr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-            StringContent hc = new StringContent(body, Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = await client.DeleteAsync(baseUrl);
-            string data = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<AddContactsResponse>(data);
-        }
-
-        private static async Task<IEnumerable<AddContactsRequest>> Map(IEnumerable<PostDischargeInfo> dqr)
-        {
-            //var config = new MapperConfiguration(cfg => cfg.CreateMap<IEnumerable<DatabaseQueryResult>, List<AddContactsRequest>>());
-            //var mapper = new Mapper(config);
-            var mapper = MapperConfig.InitializeAutomapper();
-            return mapper.Map<List<AddContactsRequest>>(dqr);
-        }
-
-        private static async Task<StringContent> GenerateBody(IEnumerable<PostDischargeInfo> dqr)
-        {
-            IEnumerable<AddContactsRequest> acr = await Map(dqr);
-            var body = JsonConvert.SerializeObject(acr, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
-            return new StringContent(body, Encoding.UTF8, "application/json");
-        }
-
-        public static T DeserializeResponse<T>(string response)
-        {
-            return JsonSerializer.Deserialize<T>(response, new JsonSerializerOptions{
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-        }
     }
 }
+
+/*[FunctionName("ProcessSpanishContacts")]
+public async Task ProcessSpanishContacts([TimerTrigger("0 0 0 * * *", RunOnStartup = true)] TimerInfo myTimer)
+{
+if (myTimer.IsPastDue)
+{
+_logger.LogInformation("Timer is running late!");
+}
+_logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+AccessTokenResponse token = await AuthenticateAsync();
+
+string connString = "Data Source=tcp:nhonlineordersql.database.windows.net;Initial Catalog=NHCRM_TEST2;User Id=NHOOAdmin;Password=nH3@r!ng321;Connect Timeout=0;Encrypt=False;TrustServerCertificate=True;ApplicationIntent=ReadWrite;MultiSubnetFailover=False;MultipleActiveResultSets=true";
+
+//Connection
+using SqlConnection conn = new(connString);
+string sql = "select * from meals.GenesysIntegration where language = 'SPA';";
+var queryResult = await conn.QueryAsync<PostDischargeInfo>(sql);
+_logger.LogInformation($"{JsonConvert.SerializeObject(queryResult)}");
+
+var contactsToAdd = queryResult.TakeWhile(c => c.ShouldAddToContactList == 1);
+var contactsToUpdate = queryResult.TakeWhile(c => c.ShouldUpdateInContactList == 1);
+var contactsToRemove = queryResult.TakeWhile(c => c.ShouldRemoveFromContactList == 1);
+string contactListId = "ad549fb7-e5bf-438d-880f-1c4e3d135dc9";
+
+_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+
+// BULK ADD CONTACTS
+// if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+var addResult = await AddContactsToContactList(contactsToAdd, token, contactListId);
+
+// BULK UPDATE CONTACTS
+// if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+var updateResult = await UpdateContactsInContactList(contactsToUpdate, token, contactListId);
+
+// BULK REMOVE CONTACTS
+// if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+var removeResult = await DeleteContactsFromContactList(contactsToRemove, token, contactListId);
+}*/

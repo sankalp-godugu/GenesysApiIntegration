@@ -8,25 +8,10 @@ using MemberContactInfoJob.Model.Request;
 namespace MemberContactInfoJob.Model.Response
 {
     // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
-    public class ConfigurationOverrides
-    {
-        public bool Priority { get; set; }
-    }
-
-    public class ContactableStatus
-    {
-        public Email Email { get; set; }
-    }
-
-    public class Email
-    {
-        public bool Contactable => true;
-    }
-
-    public class AddContactsResponse
+    public class GetContactsResponse
     {
         public string Id { get; set; }
-        public string contactListId = "0226dcdf-fa47-4cd2-a81c-5af821d899e2";
+        public string contactListId = "8518a928-6c33-491e-b43a-bf98ec790f7b";
         public Data Data { get; set; }
         public bool Callable => true;
         public PhoneNumberStatus PhoneNumberStatus { get; set; }

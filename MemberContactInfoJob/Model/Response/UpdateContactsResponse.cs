@@ -40,7 +40,7 @@ namespace MemberContactInfoJob.Model.Response
         public PhoneNumber PhoneNumber { get; set; }
     }
 
-    public class UpdateContactResponse
+    public class UpdateContactsResponse
     {
         public string Id { get; set; }
         public string ContactListId { get; set; }

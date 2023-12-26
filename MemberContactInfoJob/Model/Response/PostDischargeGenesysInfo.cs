@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MemberContactInfoJob.Model.Response
 {
-    public class PostDischargeInfo
+    public class PostDischargeGenesysInfo
     {
         public long PostDischargeId { get; set; }
         public string NHMemberId { get; set; }
@@ -17,9 +17,9 @@ namespace MemberContactInfoJob.Model.Response
         // from PD layout #2
         public string AuthId { get; set; }
         public string SubscriberId { get; set; }
-        public string MedicareNbr { get; set; }
+        /*public string MedicareNbr { get; set; }
         public string MedicaidNbr { get; set; }
-        public DateTime DOB { get; set; }
+        public DateTime DOB { get; set; }*/
         public string Address1 { get; set; }
         public string Address2 { get; set; }
         public string City { get; set; }
@@ -46,5 +46,20 @@ namespace MemberContactInfoJob.Model.Response
 
         public DateTime CreateDate { get; set; }
         public DateTime ModifyDate { get; set; }
+
+        // genesys specific field
+        public long GenesysIntegrationId { get; set; }
+        public string MemberName { get; set; }
+        public string CarrierName { get; set; }
+        public string Region { get; set; }
+        public string Language { get; set; }
+        public DateTime LoadDate = DateTime.UtcNow.Date;
+        public string DayCount { get; set; }
+        public string AttemptCountToday { get; set; }
+        public string AttemptCountTotal { get; set; }
+        public int ShouldAddToContactList { get; set; }
+        public int ShouldRemoveFromContactList { get; set; }
+        public int ShouldUpdateInContactList { get; set; }
+        public int IsDeletedFromContactList { get; set; }
     }
 }
