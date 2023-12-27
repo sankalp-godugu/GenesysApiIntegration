@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
-using MemberContactInfoJob.Model.Request;
-using MemberContactInfoJob.Model.Response;
+using GenesysContactsProcessJob.Model.Request;
+using GenesysContactsProcessJob.Model.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MemberContactInfoJob.Utility
+namespace GenesysContactsProcessJob.Utilities
 {
     public class MapperConfig
     {
@@ -17,7 +17,7 @@ namespace MemberContactInfoJob.Utility
             var config = new MapperConfiguration(cfg =>
             {
                 //Configuring PostDischargeInfo to AddContactsRequest
-                cfg.CreateMap<PostDischargeGenesysInfo, AddContactsRequest>()
+                cfg.CreateMap<PostDischargeInfoPlusGenesys, AddContactsRequest>()
                     .ForPath(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(acr => acr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
@@ -32,7 +32,7 @@ namespace MemberContactInfoJob.Utility
                     .ForPath(acr => acr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
                     .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
                 //Any Other Mapping Configuration ....
-                cfg.CreateMap<PostDischargeGenesysInfo, UpdateContactsRequest>()
+                cfg.CreateMap<PostDischargeInfoPlusGenesys, UpdateContactsRequest>()
                     .ForPath(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(acr => acr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))

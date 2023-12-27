@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MemberContactInfoJob.Model.Request;
+using GenesysContactsProcessJob.Model.Request;
 
-namespace MemberContactInfoJob.Model.Response
+namespace GenesysContactsProcessJob.Model.Response
 {
     // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
     public class ConfigurationOverrides
@@ -26,7 +26,7 @@ namespace MemberContactInfoJob.Model.Response
     public class AddContactsResponse
     {
         public string Id { get; set; }
-        public string contactListId = "0226dcdf-fa47-4cd2-a81c-5af821d899e2";
+        public string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
         public Data Data { get; set; }
         public bool Callable => true;
         public PhoneNumberStatus PhoneNumberStatus { get; set; }

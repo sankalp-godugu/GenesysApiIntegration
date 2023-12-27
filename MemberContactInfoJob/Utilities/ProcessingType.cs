@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MemberContactInfoJob.Utility
+namespace GenesysContactsProcessJob.Utilities
 {
     public enum ProcessingType
     {

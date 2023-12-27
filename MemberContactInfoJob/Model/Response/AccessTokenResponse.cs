@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace MemberContactInfoJob.Model.Response
+namespace GenesysContactsProcessJob.Model.Response
 {
     [JsonSerializable(typeof(AccessTokenResponse))]
     public class AccessTokenResponse
