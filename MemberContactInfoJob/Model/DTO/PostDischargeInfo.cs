@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GenesysContactsProcessJob.Model.Response
+namespace GenesysContactsProcessJob.Model.DTO
 {
     public class PostDischargeInfo
     {

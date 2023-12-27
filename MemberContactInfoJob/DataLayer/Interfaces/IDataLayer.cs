@@ -23,12 +23,12 @@ namespace GenesysContactsProcessJob.DataLayer.Interfaces
         /// </summary>
         /// <typeparam name="T">Generic parameter.</typeparam>
         /// <param name="procedureName">Procedure name.</param>
-        /// <param name="caseTicketId">Case ticket id</param>
-        /// <param name="zenDeskTicketId">Zen desk ticket id.</param>
+        /// <param name="genesysContactId">Genesys contact id.</param>
+        /// <param name="action">Genesys API action.</param>
         /// <param name="currentProcessId">Current process id.</param>
         /// <param name="connectionString">Connection string.</param>
         /// <param name="logger">Logger</param>
         /// <returns>Returns the collection of objects.</returns>
-        Task<int> ExecuteNonQuery(string procedureName, long? caseTicketId, long zenDeskTicketId, long currentProcessId, string connectionString, ILogger logger);
+        Task<int> ExecuteNonQueryForGenesys(string procedureName, long genesysContactId, string action, long currentProcessId, string connectionString, ILogger logger);
     }
 }

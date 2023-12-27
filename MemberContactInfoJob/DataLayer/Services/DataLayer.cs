@@ -67,13 +67,13 @@ namespace GenesysContactsProcessJob.DataLayer.Services
         /// </summary>
         /// <typeparam name="T">Generic parameter.</typeparam>
         /// <param name="procedureName">Procedure name.</param>
-        /// <param name="caseTicketId">Case ticket id</param>
-        /// <param name="zenDeskTicketId">Zen desk ticket id.</param>
+        /// <param name="genesysContactId">Genesys contact id.</param>
+        /// <param name="action">Genesys API action.</param>
         /// <param name="currentProcessId">Current process id.</param>
         /// <param name="logger">Logger</param>
         /// <param name="connectionString">Connection string.</param>
         /// <returns>Returns the collection of objects.</returns>
-        public async Task<int> ExecuteNonQuery(string procedureName, long? caseTicketId, long zenDeskTicketId, long currentProcessId, string connectionString, ILogger logger)
+        public async Task<int> ExecuteNonQueryForGenesys(string procedureName, long genesysContactId, string action, long currentProcessId, string connectionString, ILogger logger)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
@@ -84,8 +84,8 @@ namespace GenesysContactsProcessJob.DataLayer.Services
                     command.CommandType = CommandType.StoredProcedure;
 
                     // Input parameters
-                    command.Parameters.AddWithValue("@caseTicketId", caseTicketId);
-                    command.Parameters.AddWithValue("@ZenDeskTicketID", zenDeskTicketId);
+                    command.Parameters.AddWithValue("@GenesysContactId", genesysContactId);
+                    command.Parameters.AddWithValue("@Action", action);
                     command.Parameters.AddWithValue("@IsProcessed", currentProcessId);
 
                     // Output parameter
@@ -103,13 +103,13 @@ namespace GenesysContactsProcessJob.DataLayer.Services
                         int result = (int)resultParameter.Value;
 
                         // Log the result
-                        logger.LogInformation($"UpdateZenDeskReferenceForMemberCaseTickets result: {result}");
+                        logger.LogInformation($"UpdateGenesysReferenceForMemberContact result: {result}");
 
                         return result;
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Error updating ZenDesk reference: {ex.Message}");
+                        logger.LogError($"Error updating Genesys reference: {ex.Message}");
                         return -1;
                     }
                     finally
@@ -182,7 +182,6 @@ namespace GenesysContactsProcessJob.DataLayer.Services
                 return list;
             }
         }
-
 
         /// <summary>
         /// Gets the sql parameters.
