@@ -51,7 +51,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<GetContactsResponse>> GetContactsFromContactList(IEnumerable<PostDischargeInfoPlusGenesys> contactsToGet, ILogger logger)
+        public async Task<IEnumerable<GetContactsResponse>> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToGet, ILogger logger)
         {
             StringContent content = GetGetRequestBodyForGenesys(contactsToGet, logger);
             return await GetContactsToContactList(content, logger);
@@ -63,7 +63,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<AddContactsResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfoPlusGenesys> contactsToAdd, ILogger logger)
+        public async Task<IEnumerable<AddContactsResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToAdd, ILogger logger)
         {
             // Gets the request body for the genesys client.
             StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToAdd, logger);
@@ -76,7 +76,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToUpdate">Contacts To Update.<see cref="ContactsToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfoPlusGenesys> contactsToUpdate, ILogger logger)
+        public async Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToUpdate, ILogger logger)
         {
             // Gets the request body for the Genesys API request.
             StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToUpdate, logger);
@@ -145,7 +145,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// </summary>
         /// <param name="contactsToProcess">Contacts to Process.<see cref="ContactsToProcess"/></param>
         /// <returns>Returns the string content.</returns>
-        private StringContent GetAddOrUpdateRequestBodyForGenesys(IEnumerable<PostDischargeInfoPlusGenesys> contactsToProcess, ILogger logger)
+        private StringContent GetAddOrUpdateRequestBodyForGenesys(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToProcess, ILogger logger)
         {
             try
             {
@@ -171,7 +171,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// </summary>
         /// <param name="contactsToGet">Contacts to Process.<see cref="ContactsToGet"/></param>
         /// <returns>Returns the string content.</returns>
-        private StringContent GetGetRequestBodyForGenesys(IEnumerable<PostDischargeInfoPlusGenesys> contactsToGet, ILogger logger)
+        private StringContent GetGetRequestBodyForGenesys(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToGet, ILogger logger)
         {
             try
             {
