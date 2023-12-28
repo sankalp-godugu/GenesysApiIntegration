@@ -2,8 +2,6 @@
 
 namespace GenesysContactsProcessJob.Model.Response
 {
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
-
     public class GetContactsResponse
     {
         public string Id { get; set; }

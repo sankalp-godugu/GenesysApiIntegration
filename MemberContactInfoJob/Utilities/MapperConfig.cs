@@ -2,11 +2,6 @@
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Request;
 using GenesysContactsProcessJob.Model.Response;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenesysContactsProcessJob.Utilities
 {
@@ -15,10 +10,10 @@ namespace GenesysContactsProcessJob.Utilities
         public static Mapper InitializeAutomapper()
         {
             //Provide all the Mapping Configuration
-            var config = new MapperConfiguration(cfg =>
+            MapperConfiguration config = new(cfg =>
             {
                 //Configuring PostDischargeInfo to AddContactsRequest
-                cfg.CreateMap<PostDischargeInfoPlusGenesys, AddContactsRequest>()
+                _ = cfg.CreateMap<PostDischargeInfo_GenesysMemberContactInfo, AddContactsRequest>()
                     .ForMember(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(acr => acr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
@@ -34,7 +29,7 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
 
                 // UpdateContactsRequest
-                cfg.CreateMap<PostDischargeInfoPlusGenesys, UpdateContactsRequest>()
+                _ = cfg.CreateMap<PostDischargeInfo_GenesysMemberContactInfo, UpdateContactsRequest>()
                     .ForMember(ucr => ucr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForPath(ucr => ucr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(ucr => ucr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
@@ -49,7 +44,7 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(ucr => ucr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
                     .ForPath(ucr => ucr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
 
-                cfg.CreateMap<GetContactsResponse, PostDischargeInfoPlusGenesys>()
+                _ = cfg.CreateMap<GetContactsResponse, PostDischargeInfo_GenesysMemberContactInfo>()
                     .ForMember(gcr => gcr.PostDischargeId, opt => opt.MapFrom(src => src.Id))
                     .ForPath(gcr => gcr.NHMemberId, opt => opt.MapFrom(src => src.Data.NhMemberId))
                     .ForPath(gcr => gcr.MemberName, opt => opt.MapFrom(src => src.Data.MemberName))
@@ -66,7 +61,7 @@ namespace GenesysContactsProcessJob.Utilities
             });
 
             //Create an Instance of Mapper and return that Instance
-            var mapper = new Mapper(config);
+            Mapper mapper = new(config);
             return mapper;
         }
     }

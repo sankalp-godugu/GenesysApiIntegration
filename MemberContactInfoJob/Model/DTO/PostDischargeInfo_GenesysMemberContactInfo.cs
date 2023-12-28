@@ -1,14 +1,8 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace GenesysContactsProcessJob.Model.DTO
 {
-    public class PostDischargeInfoPlusGenesys
+    public class PostDischargeInfo_GenesysMemberContactInfo
     {
         public long PostDischargeId { get; set; }
         public string NHMemberId { get; set; }

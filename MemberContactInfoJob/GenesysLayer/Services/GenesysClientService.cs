@@ -1,4 +1,5 @@
-﻿using GenesysContactsProcessJob.GenesysLayer.Interfaces;
+﻿using AutoMapper;
+using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Request;
 using GenesysContactsProcessJob.Model.Response;
@@ -24,8 +25,8 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
     public class GenesysClientService : IGenesysClientService
     {
         #region Private Fields
-        private IHttpClientFactory _httpClientFactory;
-        private IConfiguration _configuration;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
         #endregion
 
         #region Constructor
@@ -120,7 +121,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             Uri baseUrl = new(Environment.GetEnvironmentVariable("TokenUrl"));
             AccessTokenRequest atr = new();
-            var form = new Dictionary<string, string>()
+            Dictionary<string, string> form = new()
             {
                 {"grant_type", atr.Grant_Type},
                 {"client_id", atr.client_id},
@@ -132,7 +133,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 return cachedToken;*/
 
             HttpResponseMessage result = await client.PostAsync(baseUrl, new FormUrlEncodedContent(form));
-            result.EnsureSuccessStatusCode();
+            _ = result.EnsureSuccessStatusCode();
             string response = await result.Content.ReadAsStringAsync();
             AccessTokenResponse token = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
             //SetCacheToken(token);
@@ -148,14 +149,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             try
             {
-                var mapper = MapperConfig.InitializeAutomapper();
+                Mapper mapper = MapperConfig.InitializeAutomapper();
                 IEnumerable<AddContactsRequest> gcr = mapper.Map<IEnumerable<AddContactsRequest>>(contactsToProcess);
 
                 // Serialize the dynamic object to JSON
                 string jsonPayload = JsonConvert.SerializeObject(gcr, Formatting.Indented, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 // Create StringContent from JSON payload
-                StringContent content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                StringContent content = new(jsonPayload, Encoding.UTF8, "application/json");
                 return content;
             }
             catch (Exception ex)
@@ -200,7 +201,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             try
             {
                 string contactIds = "";
-                foreach (var contact in contactsToDelete)
+                foreach (long contact in contactsToDelete)
                 {
                     contactIds += $"{contact},";
                 }
@@ -223,8 +224,8 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
-            var contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
-            var baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
+            string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
+            string baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
             Uri requestUri = new($"{baseUrl}/{contactListId}/contacts/bulk");
 
             // Make the API request
@@ -257,8 +258,8 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
-            var contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
-            var baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
+            string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
+            string baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
             Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true");
 
             // Make the API request
@@ -293,8 +294,8 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             {
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
-                var contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
-                var baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
+                string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
+                string baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true&clearSystemData=true");
 
                 // Make the API request
@@ -331,9 +332,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             {
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
-                var contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
+                string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
 
-                var baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
+                string baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
 
                 // Make the API request
@@ -360,13 +361,10 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
         private async Task Test()
         {
-            using (HttpClient httpClient = await GetGenesysHttpClient())
-            {
-                var url = "https://api.usw2.pure.cloud/api/v2/downloads/6217472fc7e5329f";
-                var response = await httpClient.GetByteArrayAsync(url);
-                File.WriteAllBytes(@"C:\Temp\Downloadedfile.csv", response);
-                string t = "";
-            }
+            using HttpClient httpClient = await GetGenesysHttpClient();
+            string url = "https://api.usw2.pure.cloud/api/v2/downloads/6217472fc7e5329f";
+            byte[] response = await httpClient.GetByteArrayAsync(url);
+            File.WriteAllBytes(@"C:\Temp\Downloadedfile.csv", response);
         }
 
         #endregion

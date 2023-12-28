@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenesysContactsProcessJob.Model.Response
 {
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class CallRecords
     {
         public PhoneNumber PhoneNumber { get; set; }
@@ -14,7 +9,6 @@ namespace GenesysContactsProcessJob.Model.Response
 
     public class Data
     {
-        public string TransactionId { get; set; }
         public string NhMemberId { get; set; }
         public string MemberName { get; set; }
         public string Address { get; set; }

@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using GenesysContactsProcessJob.Model.Request;
-
-namespace GenesysContactsProcessJob.Model.Response
+﻿namespace GenesysContactsProcessJob.Model.Response
 {
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<List<Root>>(myJsonResponse);
     public class ConfigurationOverrides
     {
         public bool Priority { get; set; }
@@ -26,7 +18,7 @@ namespace GenesysContactsProcessJob.Model.Response
     public class AddContactsResponse
     {
         public string Id { get; set; }
-        public string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
+        public string contactListId { get; set; }
         public Data Data { get; set; }
         public bool Callable => true;
         public PhoneNumberStatus PhoneNumberStatus { get; set; }

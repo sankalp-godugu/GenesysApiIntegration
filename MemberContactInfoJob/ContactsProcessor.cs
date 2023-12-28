@@ -1,3 +1,4 @@
+using AutoMapper;
 using GenesysContactsProcessJob.DataLayer.Interfaces;
 using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.Model.DTO;
@@ -5,7 +6,6 @@ using GenesysContactsProcessJob.Model.Request;
 using GenesysContactsProcessJob.Model.Response;
 using GenesysContactsProcessJob.TriggerUtilities;
 using GenesysContactsProcessJob.Utilities;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
@@ -62,7 +62,7 @@ namespace GenesysContactsProcessJob
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         public async Task ProcessEnglishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
-            await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService);
+            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService);
         }
 
         /// <summary>
@@ -75,15 +75,15 @@ namespace GenesysContactsProcessJob
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         public async Task ProcessSpanishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
-            await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService);
+            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService);
         }
 
 
-        private async Task<IEnumerable<AddContactsRequest>> Map(IEnumerable<GenesysIntegrationInfo> dqr)
+        private IEnumerable<AddContactsRequest> Map(IEnumerable<GenesysMemberContactInfo> dqr)
         {
             //var config = new MapperConfiguration(cfg => cfg.CreateMap<IEnumerable<DatabaseQueryResult>, List<AddContactsRequest>>());
             //var mapper = new Mapper(config);
-            var mapper = MapperConfig.InitializeAutomapper();
+            Mapper mapper = MapperConfig.InitializeAutomapper();
             return mapper.Map<List<AddContactsRequest>>(dqr);
         }
 

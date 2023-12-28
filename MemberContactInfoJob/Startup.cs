@@ -5,7 +5,6 @@ using GenesysContactsProcessJob.GenesysLayer.Services;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http;
 using System;
 using System.Net.Http;
 
@@ -23,7 +22,7 @@ namespace GenesysContactsProcessJob
         /// <param name="builder">Builder.</param>
         public override void ConfigureAppConfiguration(IFunctionsConfigurationBuilder builder)
         {
-            builder.ConfigurationBuilder
+            _ = builder.ConfigurationBuilder
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
@@ -37,17 +36,17 @@ namespace GenesysContactsProcessJob
         public override void Configure(IFunctionsHostBuilder builder)
         {
             // Initialize constants
-            var configuration = builder.GetContext().Configuration;
-            builder.Services.AddHttpClient();
-            builder.Services.AddApplicationInsightsTelemetry();
-            builder.Services.AddSingleton<IDataLayer>((s) =>
+            IConfiguration configuration = builder.GetContext().Configuration;
+            _ = builder.Services.AddHttpClient();
+            _ = builder.Services.AddApplicationInsightsTelemetry();
+            _ = builder.Services.AddSingleton<IDataLayer>((s) =>
             {
                 return new DataLayer.Services.DataLayer();
             });
-            builder.Services.AddTransient<IGenesysClientService, GenesysClientService>((s) =>
+            _ = builder.Services.AddTransient<IGenesysClientService, GenesysClientService>((s) =>
             {
-                var httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                var configuration = s.GetRequiredService<IConfiguration>();
+                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                IConfiguration configuration = s.GetRequiredService<IConfiguration>();
                 return new GenesysClientService(httpClientFactory, configuration);
             });
         }

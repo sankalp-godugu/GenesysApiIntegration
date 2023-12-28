@@ -1,14 +1,8 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace GenesysContactsProcessJob.Model.DTO
 {
-    public class GenesysIntegrationInfo
+    public class GenesysMemberContactInfo
     {
         public long GenesysIntegrationId { get; set; }
         public long PostDischargeId { get; set; }
@@ -26,7 +20,5 @@ namespace GenesysContactsProcessJob.Model.DTO
         public int IsDeletedFromContactList { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime ModifyDate { get; set; }
-        [JsonProperty("CallRecordLastResult-phoneNumber")]
-        public string CallRecordLastResultPhoneNumber { get; set; }
     }
 }
