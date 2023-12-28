@@ -123,7 +123,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                         IEnumerable<long> allContactsToDelete = contactsToRemove.Select(c => c.PostDischargeId);
                         IEnumerable<long> contactsWithNoDialWrapUpCode = getResult
-                        .Where(c => AgentWrapUpCodes.WrapUpCodes.Contains(c.WrapUpCode))
+                        .Where(c => AgentWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode))
                         .Select(c => long.Parse(c.Id));
 
                         allContactsToDelete.ToList().AddRange(contactsWithNoDialWrapUpCode.Where(c2 => allContactsToDelete.All(c1 => c1 != c2)));

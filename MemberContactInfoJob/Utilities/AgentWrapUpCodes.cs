@@ -4,7 +4,7 @@ namespace GenesysContactsProcessJob.Utilities
 {
     public class AgentWrapUpCodes
     {
-        public static readonly List<string> WrapUpCodes = new()
+        public static readonly List<string> WrapUpCodesForDeletion = new()
         {
             "Disconnected Number",
             "DNC - Do Not Call",
@@ -13,7 +13,6 @@ namespace GenesysContactsProcessJob.Utilities
             "Not Interested",
             "SOLD",
             "Wrong Number",
-            "Callback Set",
             "Already SOLD"
         };
     }
