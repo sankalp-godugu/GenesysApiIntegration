@@ -4,7 +4,7 @@ namespace GenesysContactsProcessJob.Model.DTO
 {
     public class GenesysMemberContactInfo
     {
-        public long GenesysIntegrationId { get; set; }
+        public long GenesysMemberContactInfoId { get; set; }
         public long PostDischargeId { get; set; }
         public string MemberName { get; set; }
         public string CarrierName { get; set; }

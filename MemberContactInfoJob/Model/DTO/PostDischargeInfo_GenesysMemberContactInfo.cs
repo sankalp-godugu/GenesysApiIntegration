@@ -42,7 +42,7 @@ namespace GenesysContactsProcessJob.Model.DTO
         public DateTime ModifyDate { get; set; }
 
         // genesys specific field
-        public long GenesysIntegrationId { get; set; }
+        public long GenesysMemberContactInfoId { get; set; }
         public string MemberName { get; set; }
         public string CarrierName { get; set; }
         public string Region { get; set; }

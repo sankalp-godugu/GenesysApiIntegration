@@ -1,39 +1,8 @@
-﻿using System;
+﻿using GenesysContactsProcessJob.Model.Common;
+using System;
 
 namespace GenesysContactsProcessJob.Model.Response
 {
-    public class CallRecords
-    {
-        public PhoneNumber PhoneNumber { get; set; }
-    }
-
-    public class Data
-    {
-        public string NhMemberId { get; set; }
-        public string MemberName { get; set; }
-        public string Address { get; set; }
-        public string Region { get; set; }
-        public string PhoneNumber { get; set; }
-        public string CarrierName { get; set; }
-        public string LoadDate { get; set; }
-        public string DischargeDate { get; set; }
-        public string DayCount { get; set; }
-        public string AttemptCountToday { get; set; }
-        public string AttemptCountTotal { get; set; }
-    }
-
-    public class PhoneNumber
-    {
-        public DateTime LastAttempt { get; set; }
-        public string LastResult { get; set; }
-        public bool Callable { get; set; }
-    }
-
-    public class PhoneNumberStatus
-    {
-        public PhoneNumber PhoneNumber { get; set; }
-    }
-
     public class UpdateContactsResponse
     {
         public string Id { get; set; }

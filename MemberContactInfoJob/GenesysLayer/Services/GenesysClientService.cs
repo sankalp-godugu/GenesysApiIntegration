@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CsvHelper;
 using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Request;
@@ -10,6 +11,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -51,10 +53,22 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<GetContactsResponse>> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToGet, ILogger logger)
+        public IEnumerable<GetContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToGet, ILogger logger)
         {
-            StringContent content = GetGetRequestBodyForGenesys(contactsToGet, logger);
-            return await GetContactsToContactList(content, logger);
+            _ = GetGetRequestBodyForGenesys(contactsToGet, logger);
+            throw new NotImplementedException();
+            //await GetContactsFromContactListWithStringContent(content, logger);
+        }
+
+        /// <summary>
+        /// Gets the contacts in Genesys via export file asychronously.
+        /// </summary>
+        /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
+        /// <param name="logger">Logger.<see cref="ILogger"/></param>
+        /// <returns>Returns 1 for success.</returns>
+        public async Task<IEnumerable<GetContactsExportDataResponse>> GetContactsFromContactListExport(ILogger logger)
+        {
+            return await GetContactsFromContactListExportWithQueryArgs("download=false", logger);
         }
 
         /// <summary>
@@ -92,8 +106,6 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         public async Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToDelete, ILogger logger)
         {
             // Gets the request query arguments for the Genesys API request.
-            // GET updated list of contacts (for wrap up codes) and associated list of contact IDs
-            // TODO: ongoing issue where /bulk/ get endpoint returns lastResult info but only gives us system/machine wrap up codes, not machine wrap up codes
             string queryArgs = GetDeleteRequestQueryForGenesys(contactsToDelete, logger);
             return await DeleteContactsFromContactListWithQueryArgs(queryArgs, logger);
         }
@@ -110,7 +122,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             HttpClient httpClient = _httpClientFactory.CreateClient();
 
-            // Set the Authorization header with the Basic authentication credentials
+            // Set the Authorization header with the Bearer authentication credentials
             AccessTokenResponse tokenResponse = await AuthenticateAsync(httpClient);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
 
@@ -217,20 +229,20 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <summary>
         /// Gets list of contacts with the passed body information.
         /// </summary>
-        ///  <param name="content">Content.<see cref="StringContent"/></param>
+        ///  <param name="queryArgs">Content.<see cref="string"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns thelist of contacts from Genesys.</returns>
-        private async Task<IEnumerable<GetContactsResponse>> GetContactsToContactList(StringContent content, ILogger logger)
+        private async Task<IEnumerable<GetContactsExportDataResponse>> GetContactsFromContactListExportWithQueryArgs(string queryArgs, ILogger logger)
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
             string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
             string baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
-            Uri requestUri = new($"{baseUrl}/{contactListId}/contacts/bulk");
+            Uri requestUri = new($"{baseUrl}/{contactListId}/export?{queryArgs}");
 
             // Make the API request
             //HttpResponseMessage response = await httpClient.PostAsync(_configuration["Genesys:ApiEndPoints:GetContacts"], content);
-            HttpResponseMessage response = await httpClient.PostAsync(requestUri, content);
+            HttpResponseMessage response = await httpClient.GetAsync(requestUri);
 
             // Check if the request was successful
             if (response.IsSuccessStatusCode)
@@ -238,13 +250,21 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 // Read and deserialize the response content
                 string responseContent = await response.Content.ReadAsStringAsync();
 
-                // Return the deserialized response
-                return JsonConvert.DeserializeObject<IEnumerable<GetContactsResponse>>(responseContent);
+                GetContactsExportResponse getContactsExportResponse = JsonConvert.DeserializeObject<GetContactsExportResponse>(responseContent);
+
+                requestUri = new(getContactsExportResponse.Uri);
+                response = await httpClient.GetAsync(requestUri);
+                Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                using StreamReader reader = new(responseStream);
+                using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+                _ = csv.Context.RegisterClassMap<GetContactsExportDataResponseMap>();
+                return csv.GetRecords<GetContactsExportDataResponse>().ToList();
             }
             else
             {
-                logger.LogError($"Failed to call the add contacts API endpoint with response: {response}");
-                return new List<GetContactsResponse>();
+                logger.LogError($"Failed to call the get contacts API endpoint with response: {response}");
+                return new List<GetContactsExportDataResponse>();
             }
         }
 
@@ -333,7 +353,6 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
                 string contactListId = Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId");
-
                 string baseUrl = Environment.GetEnvironmentVariable("BaseUrl");
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
 
@@ -357,14 +376,6 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 }
             }
             else { return 0; }
-        }
-
-        private async Task Test()
-        {
-            using HttpClient httpClient = await GetGenesysHttpClient();
-            string url = "https://api.usw2.pure.cloud/api/v2/downloads/6217472fc7e5329f";
-            byte[] response = await httpClient.GetByteArrayAsync(url);
-            File.WriteAllBytes(@"C:\Temp\Downloadedfile.csv", response);
         }
 
         #endregion

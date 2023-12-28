@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using GenesysContactsProcessJob.DataLayer.Interfaces;
+﻿using GenesysContactsProcessJob.DataLayer.Interfaces;
 using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Response;
@@ -71,18 +70,15 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
 
-                    IEnumerable<GetContactsResponse> getResult = new List<GetContactsResponse>();
+                    IEnumerable<GetContactsExportDataResponse> getResult = new List<GetContactsExportDataResponse>();
                     if (contactsToProcess.Any())
                     {
                         _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId")}");
-                        getResult = await _genesysClientService?.GetContactsFromContactList(contactsToProcess, _logger);
+                        getResult = await _genesysClientService?.GetContactsFromContactListExport(_logger);
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId")}");
                     }
 
                     // -------------------------------------- ADD CONTACTS TO GENESYS --------------------------------------
-
-                    Mapper mapper = MapperConfig.InitializeAutomapper();
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsInGenesys = mapper.Map<IEnumerable<PostDischargeInfo_GenesysMemberContactInfo>>(getResult);
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested - DO NOT ADD
                     IEnumerable<AddContactsResponse> addResult = new List<AddContactsResponse>();
@@ -127,7 +123,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                         IEnumerable<long> allContactsToDelete = contactsToRemove.Select(c => c.PostDischargeId);
                         IEnumerable<long> contactsWithNoDialWrapUpCode = getResult
-                        .Where(c => AgentWrapUpCodes.WrapUpCodes.Contains(c.CallRecords?.PhoneNumber?.LastResult))
+                        .Where(c => AgentWrapUpCodes.WrapUpCodes.Contains(c.WrapUpCode))
                         .Select(c => long.Parse(c.Id));
 
                         allContactsToDelete.ToList().AddRange(contactsWithNoDialWrapUpCode.Where(c2 => allContactsToDelete.All(c1 => c1 != c2)));

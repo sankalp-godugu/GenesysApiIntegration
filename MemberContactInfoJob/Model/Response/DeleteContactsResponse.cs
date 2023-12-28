@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GenesysContactsProcessJob.Model.Common;
+using System;
 
 namespace GenesysContactsProcessJob.Model.Response
 {
