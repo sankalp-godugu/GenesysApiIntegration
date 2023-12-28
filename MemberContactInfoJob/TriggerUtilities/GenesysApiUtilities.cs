@@ -51,7 +51,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     _logger?.LogInformation("Started refreshing Genesys info table");
 
-                    var refreshResult = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysContactCountersAndStatuses, new(), APPConnectionString, _logger);
+                    var refreshResult = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysMemberContactInfo, new(), APPConnectionString, _logger);
 
                     _logger?.LogInformation($"Ended refreshing Genesys info table with result: {refreshResult}");
 
@@ -66,7 +66,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     _logger?.LogInformation("Started fetching the PD orders for all members");
 
-                    IEnumerable<PostDischargeInfoPlusGenesys> contactsToProcess = await _dataLayer.ExecuteReader<PostDischargeInfoPlusGenesys>(SQLConstants.GetAllPDOrders, sqlParams, APPConnectionString, _logger);
+                    IEnumerable<PostDischargeInfoPlusGenesys> contactsToProcess = await _dataLayer.ExecuteReader<PostDischargeInfoPlusGenesys>(SQLConstants.GetPDAndGenesysInfo, sqlParams, APPConnectionString, _logger);
 
                     _logger?.LogInformation($"Ended fetching the PD orders with count: {contactsToProcess?.Count()}");
 
@@ -80,13 +80,14 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId")}");
                     }
 
-                    // only add those contacts that aren't already in the contact list
+                    // -------------------------------------- ADD CONTACTS TO GENESYS --------------------------------------
+
                     var mapper = MapperConfig.InitializeAutomapper();
                     IEnumerable<PostDischargeInfoPlusGenesys> contactsInGenesys = mapper.Map<IEnumerable<PostDischargeInfoPlusGenesys>>(getResult);
 
-                    // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+                    // if member already in contact list with same discharge date and/or disposition code of not interested - DO NOT ADD
                     IEnumerable<AddContactsResponse> addResult = new List<AddContactsResponse>();
-                    IEnumerable<PostDischargeInfoPlusGenesys> contactsToAdd = contactsToProcess.Except(contactsInGenesys).TakeWhile(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList);
+                    IEnumerable<PostDischargeInfoPlusGenesys> contactsToAdd = contactsToProcess.TakeWhile(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList);//.Except(contactsInGenesys);
                     if (contactsToAdd.Any())
                     {
                         _logger?.LogInformation($"Started adding contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId")}");
@@ -95,9 +96,11 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                         foreach (var contact in contactsToAdd)
                         {
-                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "ADD", 2, _dataLayer);
+                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "AFTER_ADD", 2, _dataLayer);
                         }
                     }
+
+                    // -------------------------------------- UPDATE CONTACTS IN GENESYS --------------------------------------
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
                     IEnumerable<UpdateContactsResponse> updateResult = new List<UpdateContactsResponse>();
@@ -113,6 +116,8 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                             await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "UPDATE", 2, _dataLayer);
                         }
                     }
+
+                    // -------------------------------------- DELETE CONTACTS FROM GENESYS --------------------------------------
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
                     long deleteResult;
@@ -162,7 +167,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
         {
             logger?.LogInformation($"Updating Genesys contact details with contact id :{genesysContact?.PostDischargeId}");
 
-            var result = await dataLayer.ExecuteNonQueryForGenesys(SQLConstants.UpdateGenesysContactStatus, genesysContact.PostDischargeId, action, currentProcessId, appConnectionString, logger);
+            var result = await dataLayer.ExecuteNonQueryForGenesys(SQLConstants.UpdateGenesysMemberContactInfo, genesysContact.PostDischargeId, action, currentProcessId, appConnectionString, logger);
 
             if (result == 1)
             {

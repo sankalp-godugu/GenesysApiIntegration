@@ -15,7 +15,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// Get list of contacts from Genesys asychronously.
         /// </summary>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
-        /// <returns>Returns the ticket id of the created Genesys.</returns>
+        /// <returns>Returns the list of contacts from Genesys.</returns>
         public Task<IEnumerable<GetContactsResponse>> GetContactsFromContactList(IEnumerable<PostDischargeInfoPlusGenesys> contactsToAdd, ILogger logger);
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// </summary>
         /// <param name="contactsToUpdate">Contacts To Update.<see cref="ContactsToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
-        /// <returns>Returns the list of tickets updated in Genesys.</returns>
+        /// <returns>Returns the list of updated contacts in Genesys.</returns>
         public Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfoPlusGenesys> contactsToUpdate, ILogger logger);
 
         /// <summary>

@@ -142,7 +142,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <summary>
         /// Gets the API request body for Genesys.
         /// </summary>
-        /// <param name="caseTicket">Case ticket.<see cref="CaseTickets"/></param>
+        /// <param name="contactsToProcess">Contacts to Process.<see cref="ContactsToProcess"/></param>
         /// <returns>Returns the string content.</returns>
         private StringContent GetAddOrUpdateRequestBodyForGenesys(IEnumerable<PostDischargeInfoPlusGenesys> contactsToProcess, ILogger logger)
         {
@@ -168,7 +168,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <summary>
         /// Gets the API request body for Genesys.
         /// </summary>
-        /// <param name="caseTicket">Case ticket.<see cref="CaseTickets"/></param>
+        /// <param name="contactsToGet">Contacts to Process.<see cref="ContactsToGet"/></param>
         /// <returns>Returns the string content.</returns>
         private StringContent GetGetRequestBodyForGenesys(IEnumerable<PostDischargeInfoPlusGenesys> contactsToGet, ILogger logger)
         {
@@ -180,7 +180,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 string jsonPayload = JsonConvert.SerializeObject(gcr, Formatting.Indented, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 // Create StringContent from JSON payload
-                StringContent content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                StringContent content = new(jsonPayload, Encoding.UTF8, "application/json");
                 return content;
             }
             catch (Exception ex)
@@ -190,6 +190,11 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             }
         }
 
+        /// <summary>
+        /// Gets the API request body for Genesys.
+        /// </summary>
+        /// <param name="contactsToDelete">Contacts to Process.<see cref="ContactsToDelete"/></param>
+        /// <returns>Returns the string content.</returns>
         private string GetDeleteRequestQueryForGenesys(IEnumerable<long> contactsToDelete, ILogger logger)
         {
             try
@@ -281,7 +286,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// </summary>
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
-        /// <returns>Returns the updated ticket id.</returns>
+        /// <returns>Returns the updated list of contacts.</returns>
         private async Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactListWithStringContent(StringContent content, ILogger logger)
         {
             if (content != null)
@@ -319,7 +324,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// </summary>
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
-        /// <returns>Returns the updated ticket id.</returns>
+        /// <returns>Returns 1 if success.</returns>
         private async Task<long> DeleteContactsFromContactListWithQueryArgs(string queryArgs, ILogger logger)
         {
             if (!string.IsNullOrWhiteSpace(queryArgs))

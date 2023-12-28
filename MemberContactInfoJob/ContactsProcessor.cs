@@ -53,30 +53,30 @@ namespace GenesysContactsProcessJob
         #region Methods
 
         /// <summary>
-        /// Case management tickets processor.
+        /// Genesys English member contacts processor.
         /// </summary>
         /// <param name="req">Request.<see cref="req"/></param>
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         [FunctionName("AetnaEnglishContactsProcessor")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
-        public async Task ProcessEnglishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger _logger)
+        public async Task ProcessEnglishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
-            await GenesysApiUtilities.ProcessGenesysContacts(_logger, _configuration, _dataLayer, _genesysClientService);
+            await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService);
         }
 
         /// <summary>
-        /// Case management tickets processor.
+        /// Genesys Spanish member contacts processor.
         /// </summary>
         /// <param name="req">Request.<see cref="req"/></param>
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
-        /*[FunctionName("AetnaSpanishContactsProcessor")]
+        [FunctionName("AetnaSpanishContactsProcessor")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
-        public async Task<IActionResult> ProcessSpanishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger _logger)
+        public async Task ProcessSpanishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
-            return GenesysApiUtilities.ProcessGenesysContacts(_logger, _configuration, _dataLayer, _genesysClientService);
-        }*/
+            await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService);
+        }
 
 
         private async Task<IEnumerable<AddContactsRequest>> Map(IEnumerable<GenesysIntegrationInfo> dqr)

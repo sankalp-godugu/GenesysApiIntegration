@@ -32,6 +32,7 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(acr => acr.Data.DayCount, opt => opt.MapFrom(src => src.DayCount))
                     .ForPath(acr => acr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
                     .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
+
                 // UpdateContactsRequest
                 cfg.CreateMap<PostDischargeInfoPlusGenesys, UpdateContactsRequest>()
                     .ForMember(ucr => ucr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
@@ -47,21 +48,23 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(ucr => ucr.Data.DayCount, opt => opt.MapFrom(src => src.DayCount))
                     .ForPath(ucr => ucr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
                     .ForPath(ucr => ucr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
+
                 cfg.CreateMap<GetContactsResponse, PostDischargeInfoPlusGenesys>()
-                    .ForMember(ucr => ucr.PostDischargeId, opt => opt.MapFrom(src => src.Id))
-                    .ForPath(ucr => ucr.NHMemberId, opt => opt.MapFrom(src => src.Data.NhMemberId))
-                    .ForPath(ucr => ucr.MemberName, opt => opt.MapFrom(src => src.Data.MemberName))
+                    .ForMember(gcr => gcr.PostDischargeId, opt => opt.MapFrom(src => src.Id))
+                    .ForPath(gcr => gcr.NHMemberId, opt => opt.MapFrom(src => src.Data.NhMemberId))
+                    .ForPath(gcr => gcr.MemberName, opt => opt.MapFrom(src => src.Data.MemberName))
                     //.ForPath(ucr => ucr.Language, opt => opt.MapFrom(src => src.Data.Language))
-                    .ForPath(ucr => string.IsNullOrWhiteSpace(ucr.Address1) ? ucr.Address2 : ucr.Address1, opt => opt.MapFrom(src => src.Data.Address))
-                    .ForPath(ucr => ucr.Region, opt => opt.MapFrom(src => src.Data.Region))
-                    .ForPath(ucr => ucr.PhoneNbr, opt => opt.MapFrom(src => src.Data.PhoneNumber))
-                    .ForPath(ucr => ucr.CarrierName, opt => opt.MapFrom(src => src.Data.CarrierName))
-                    .ForPath(ucr => ucr.LoadDate, opt => opt.MapFrom(src => src.Data.LoadDate))
-                    .ForPath(ucr => ucr.DischargeDate, opt => opt.MapFrom(src => src.Data.DischargeDate))
-                    .ForPath(ucr => ucr.DayCount, opt => opt.MapFrom(src => src.Data.DayCount))
-                    .ForPath(ucr => ucr.AttemptCountToday, opt => opt.MapFrom(src => src.Data.AttemptCountToday))
-                    .ForPath(ucr => ucr.AttemptCountTotal, opt => opt.MapFrom(src => src.Data.AttemptCountTotal));
+                    //.ForPath(gcr => string.IsNullOrWhiteSpace(gcr.Address1) ? gcr.Address2 : gcr.Address1, opt => opt.MapFrom(src => src.Data.Address))
+                    .ForPath(gcr => gcr.Region, opt => opt.MapFrom(src => src.Data.Region))
+                    .ForPath(gcr => gcr.PhoneNbr, opt => opt.MapFrom(src => src.Data.PhoneNumber))
+                    .ForPath(gcr => gcr.CarrierName, opt => opt.MapFrom(src => src.Data.CarrierName))
+                    .ForPath(gcr => gcr.LoadDate, opt => opt.MapFrom(src => src.Data.LoadDate))
+                    .ForPath(gcr => gcr.DischargeDate, opt => opt.MapFrom(src => src.Data.DischargeDate))
+                    .ForPath(gcr => gcr.DayCount, opt => opt.MapFrom(src => src.Data.DayCount))
+                    .ForPath(gcr => gcr.AttemptCountToday, opt => opt.MapFrom(src => src.Data.AttemptCountToday))
+                    .ForPath(gcr => gcr.AttemptCountTotal, opt => opt.MapFrom(src => src.Data.AttemptCountTotal));
             });
+
             //Create an Instance of Mapper and return that Instance
             var mapper = new Mapper(config);
             return mapper;
