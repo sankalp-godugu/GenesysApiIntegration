@@ -19,5 +19,8 @@
         /// Updates the Genesys reference for member contacts.
         /// </summary>
         public static readonly string UpdateGenesysMemberContactInfo = "[meals].[UpdateGenesysMemberContactInfo]";
+
+        // TODO: remove for PROD deployment
+        public static readonly string InsertPostDischargeInfoTestData = "[meals].[InsertPostDischargeInfoTestData]";
     }
 }

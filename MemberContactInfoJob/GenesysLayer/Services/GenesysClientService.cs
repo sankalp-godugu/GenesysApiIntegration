@@ -131,7 +131,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
         private async Task<AccessTokenResponse> AuthenticateAsync(HttpClient client)
         {
-            Uri baseUrl = new(Environment.GetEnvironmentVariable("TokenUrl"));
+            Uri baseUrl = new(Environment.GetEnvironmentVariable("AccessTokenUrl"));
             AccessTokenRequest atr = new();
             Dictionary<string, string> form = new()
             {

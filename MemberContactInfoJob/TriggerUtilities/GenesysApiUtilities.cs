@@ -27,7 +27,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
         /// <param name="_dataLayer">An instance of the <see cref="IDataLayer"/> interface or class for interacting with the data layer.</param>
         /// <param name="_genesysClientService">An instance of the <see cref="IGenesysClientService"/> interface or class for Genesys API service calls.</param>
         /// <returns>An <see cref="IActionResult"/> representing the result of the Genesys contacts processing.</returns>
-        public static async Task<IActionResult> ProcessGenesysContacts(ILogger _logger, IConfiguration _configuration, IDataLayer _dataLayer, IGenesysClientService _genesysClientService)
+        public static async Task<IActionResult> ProcessGenesysContacts(ILogger _logger, IConfiguration _configuration, IDataLayer _dataLayer, IGenesysClientService _genesysClientService, string lang)
         {
             try
             {
@@ -45,6 +45,9 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     //string APPConnectionString = _configuration["DataBase:APPConnectionString"];
                     string APPConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
 
+                    // TODO: remove for PROD deployment
+                    IEnumerable<int> result = await _dataLayer.ExecuteReader<int>(SQLConstants.InsertPostDischargeInfoTestData, new(), APPConnectionString, _logger);
+
                     // ---------------------------------- REFRESH MEMBER CONTACT STATUS TABLE ------------------------------
 
                     _logger?.LogInformation("Started refreshing Genesys info table");
@@ -53,13 +56,13 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     _logger?.LogInformation($"Ended refreshing Genesys info table with result: {refreshResult}");
 
-                    // ----------------------------------- GET ENGLISH MEMBERS -----------------------------------------
+                    // ----------------------------------- GET MEMBERS BY LANG -----------------------------------------
 
                     // SQL parameters.
                     Dictionary<string, object> sqlParams = new()
                     {
                         //{"@lang", _configuration["Language"]}
-                        {"@lang", "ENG" }
+                        {"@lang", lang }
                     };
 
                     _logger?.LogInformation("Started fetching the PD orders for all members");
@@ -116,7 +119,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
                     long deleteResult;
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToRemove = contactsToProcess.TakeWhile(c => c.ShouldRemoveFromContactList && !c.IsDeletedFromContactList);
+                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToRemove = contactsToProcess.TakeWhile(c => c.ShouldRemoveFromContactList);
                     if (contactsToRemove.Any())
                     {
                         _logger?.LogInformation($"Started deleting contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglishCampaignClId")}");
