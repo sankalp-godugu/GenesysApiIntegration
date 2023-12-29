@@ -130,9 +130,18 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     // don't update contacts that have been removed from contact list
                     _ = contactsToUpdateInGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId));
                     // do not reset AttemptCountTotal on update - keep the value from Genesys
-                    foreach (GetContactsExportDataFromGenesysResponse contact in getContactsExportDataFromGenesysResponse)
+
+                    if (contactsToUpdateInGenesys.Count() > 0)
                     {
-                        contactsToUpdateInGenesys.FirstOrDefault(c => c.PostDischargeId == int.Parse(contact.Id)).AttemptCountTotal = int.Parse(contact.Data.AttemptCountTotal);
+                        foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys in contactsToUpdateInGenesys)
+                        {
+                            contactToUpdateInGenesys.AttemptCountToday = int.Parse(getContactsExportDataFromGenesysResponse.FirstOrDefault(c => contactToUpdateInGenesys.PostDischargeId == long.Parse(c.Id)).Data.AttemptCountToday);
+                        }
+
+                        foreach (GetContactsExportDataFromGenesysResponse contact in getContactsExportDataFromGenesysResponse)
+                        {
+                            contactsToUpdateInGenesys.FirstOrDefault(c => c.PostDischargeId == int.Parse(contact.Id)).AttemptCountTotal = int.Parse(contact.Data.AttemptCountTotal);
+                        }
                     }
 
                     if (contactsToUpdateInGenesys.Any())
