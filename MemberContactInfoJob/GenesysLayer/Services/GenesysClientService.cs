@@ -55,9 +55,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <returns>Returns 1 for success.</returns>
         public IEnumerable<GetContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, ILogger logger)
         {
-            _ = GetGetRequestBodyForGenesys(contactsToGetFromGenesys, logger);
             throw new NotImplementedException();
-            //await GetContactsFromContactListWithStringContent(content, logger);
         }
 
         /// <summary>
@@ -172,7 +170,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             }
             catch (Exception ex)
             {
-                logger.LogError($"Failed in processing the request body for Genesys with exception message: {ex.Message}");
+                logger.LogError($"Failed in processing the Add/Update request body for Genesys API call with exception message: {ex.Message}");
                 return null;
             }
         }
@@ -197,7 +195,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             }
             catch (Exception ex)
             {
-                logger.LogError($"Failed in processing the request body for Genesys with exception message: {ex.Message}");
+                logger.LogError($"Failed in processing the GET request body for Genesys API call with exception message: {ex.Message}");
                 return null;
             }
         }
@@ -261,7 +259,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             }
             else
             {
-                logger.LogError($"Failed to call the get contacts API endpoint with response: {response}");
+                logger.LogError($"Error in Get Contacts API endpoint with response: {response}");
                 return new List<GetContactsExportDataFromGenesysResponse>();
             }
         }
@@ -294,7 +292,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             }
             else
             {
-                logger.LogError($"Failed to call the Add Contacts API endpoint with response: {response}");
+                logger.LogError($"Error in Add Contacts API endpoint with response: {response}");
                 return new List<AddContactsToGenesysResponse>();
             }
         }
@@ -330,7 +328,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 }
                 else
                 {
-                    logger.LogError($"Failed to call the Update Contacts API endpoint with response: {response}");
+                    logger.LogError($"Error in Update Contacts API endpoint with response: {response}");
                     return new List<UpdateContactsInGenesysResponse>();
                 }
             }
@@ -367,11 +365,16 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 }
                 else
                 {
-                    logger.LogError($"Failed to call the Delete Contacts API endpoint with response: {response}");
+                    logger.LogError($"Error in Remove Contacts API endpoint with response: {response}");
                     return 0;
                 }
             }
             else { return 0; }
+        }
+
+        Task<IEnumerable<GetContactsResponse>> IGenesysClientService.GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, ILogger logger)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

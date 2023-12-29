@@ -14,10 +14,10 @@ namespace GenesysContactsProcessJob.Model.DTO
         public string DayCount { get; set; }
         public string AttemptCountToday { get; set; }
         public string AttemptCountTotal { get; set; }
-        public int ShouldAddToContactList { get; set; }
-        public int ShouldRemoveFromContactList { get; set; }
-        public int ShouldUpdateInContactList { get; set; }
-        public int IsDeletedFromContactList { get; set; }
+        public bool ShouldAddToContactList { get; set; }
+        public bool ShouldRemoveFromContactList { get; set; }
+        public bool ShouldUpdateInContactList { get; set; }
+        public bool IsDeletedFromContactList { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime ModifyDate { get; set; }
     }

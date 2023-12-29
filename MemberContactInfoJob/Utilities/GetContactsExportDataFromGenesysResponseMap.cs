@@ -23,8 +23,9 @@ namespace GenesysContactsProcessJob.Utilities
             _ = Map(r => r.PhoneNumberStatus.PhoneNumber.Callable).Index(13);
             _ = Map(r => r.ContactableStatus.Email.Contactable).Index(14);
             _ = Map(r => r.PhoneNumberStatus.PhoneNumber.LastAttempt).Index(15);
-            _ = Map(r => r.PhoneNumberStatus.PhoneNumber.LastResult).Index(16);
             _ = Map(r => r.ContactableStatus.Sms.Contactable).Index(17);
+            _ = Map(r => r.PhoneNumberStatus.PhoneNumber.LastResult).Index(18);
+            _ = Map(r => r.WrapUpCode).Index(19);
         }
     }
 }

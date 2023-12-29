@@ -40,7 +40,7 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(ucr => ucr.Data.Language, opt => opt.MapFrom(src => src.Language))
                     .ForPath(ucr => ucr.Data.Address, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Address1) ? src.Address2 : src.Address1))
                     .ForPath(ucr => ucr.Data.Region, opt => opt.MapFrom(src => src.Region))
-                    .ForPath(ucr => ucr.Data.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNbr))
+                    .ForPath(ucr => ucr.Data.PhoneNumber, opt => opt.MapFrom(src => "954-889-6532"/*src.PhoneNbr*/))
                     .ForPath(ucr => ucr.Data.CarrierName, opt => opt.MapFrom(src => src.CarrierName))
                     .ForPath(ucr => ucr.Data.LoadDate, opt => opt.MapFrom(src => src.LoadDate))
                     .ForPath(ucr => ucr.Data.DischargeDate, opt => opt.MapFrom(src => src.DischargeDate))
