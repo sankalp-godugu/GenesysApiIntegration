@@ -3,9 +3,9 @@ using GenesysContactsProcessJob.Model.Response;
 
 namespace GenesysContactsProcessJob.Utilities
 {
-    public class GetContactsExportDataResponseMap : ClassMap<GetContactsExportDataResponse>
+    public class GetContactsExportDataFromGenesysResponseMap : ClassMap<GetContactsExportDataFromGenesysResponse>
     {
-        public GetContactsExportDataResponseMap()
+        public GetContactsExportDataFromGenesysResponseMap()
         {
             _ = Map(r => r.Id).Index(0);
             _ = Map(r => r.Data.NhMemberId).Index(1);

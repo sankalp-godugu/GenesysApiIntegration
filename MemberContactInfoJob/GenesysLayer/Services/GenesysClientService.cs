@@ -53,9 +53,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public IEnumerable<GetContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToGet, ILogger logger)
+        public IEnumerable<GetContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, ILogger logger)
         {
-            _ = GetGetRequestBodyForGenesys(contactsToGet, logger);
+            _ = GetGetRequestBodyForGenesys(contactsToGetFromGenesys, logger);
             throw new NotImplementedException();
             //await GetContactsFromContactListWithStringContent(content, logger);
         }
@@ -66,7 +66,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<GetContactsExportDataResponse>> GetContactsFromContactListExport(ILogger logger)
+        public async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExport(ILogger logger)
         {
             return await GetContactsFromContactListExportWithQueryArgs("download=false", logger);
         }
@@ -74,39 +74,39 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <summary>
         /// Adds the contacts in Genesys asychronously.
         /// </summary>
-        /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
+        /// <param name="contactsToAddToGenesys">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<AddContactsResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToAdd, ILogger logger)
+        public async Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToAddToGenesys, ILogger logger)
         {
             // Gets the request body for the genesys client.
-            StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToAdd, logger);
+            StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToAddToGenesys, logger);
             return await AddContactsToContactListWithStringContent(content, logger);
         }
 
         /// <summary>
         /// Updates the contacts in Genesys asynchronously.
         /// </summary>
-        /// <param name="contactsToUpdate">Contacts To Update.<see cref="ContactsToUpdate"/></param>
+        /// <param name="contactsToUpdateInGenesys">Contacts To Update.<see cref="ContactsToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToUpdate, ILogger logger)
+        public async Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys, ILogger logger)
         {
             // Gets the request body for the Genesys API request.
-            StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToUpdate, logger);
+            StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToUpdateInGenesys, logger);
             return await UpdateContactsInContactListWithStringContent(content, logger);
         }
 
         /// <summary>
         /// Deletes the contacts in Genesys asynchronously.
         /// </summary>
-        /// <param name="contactsToDelete">Contacts To Delete.<see cref="ContactsToDelete"/></param>
+        /// <param name="contactsToDeleteFromGenesys">Contacts To Delete.<see cref="ContactsToDelete"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToDelete, ILogger logger)
+        public async Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToDeleteFromGenesys, ILogger logger)
         {
             // Gets the request query arguments for the Genesys API request.
-            string queryArgs = GetDeleteRequestQueryForGenesys(contactsToDelete, logger);
+            string queryArgs = GetDeleteRequestQueryForGenesys(contactsToDeleteFromGenesys, logger);
             return await DeleteContactsFromContactListWithQueryArgs(queryArgs, logger);
         }
 
@@ -156,7 +156,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// </summary>
         /// <param name="contactsToProcess">Contacts to Process.<see cref="ContactsToProcess"/></param>
         /// <returns>Returns the string content.</returns>
-        private StringContent GetAddOrUpdateRequestBodyForGenesys(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToProcess, ILogger logger)
+        private StringContent GetAddOrUpdateRequestBodyForGenesys(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToProcess, ILogger logger)
         {
             try
             {
@@ -180,13 +180,13 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <summary>
         /// Gets the API request body for Genesys.
         /// </summary>
-        /// <param name="contactsToGet">Contacts to Process.<see cref="ContactsToGet"/></param>
+        /// <param name="contactsToGetFromGenesys">Contacts to Process.<see cref="ContactsToGet"/></param>
         /// <returns>Returns the string content.</returns>
-        private StringContent GetGetRequestBodyForGenesys(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToGet, ILogger logger)
+        private StringContent GetGetRequestBodyForGenesys(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, ILogger logger)
         {
             try
             {
-                IEnumerable<long> gcr = contactsToGet.Select(c => c.PostDischargeId);
+                IEnumerable<long> gcr = contactsToGetFromGenesys.Select(c => c.PostDischargeId);
 
                 // Serialize the dynamic object to JSON
                 string jsonPayload = JsonConvert.SerializeObject(gcr, Formatting.Indented, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
@@ -205,14 +205,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <summary>
         /// Gets the API request body for Genesys.
         /// </summary>
-        /// <param name="contactsToDelete">Contacts to Process.<see cref="ContactsToDelete"/></param>
+        /// <param name="contactsToDeleteFromGenesys">Contacts to Process.<see cref="ContactsToDelete"/></param>
         /// <returns>Returns the string content.</returns>
-        private string GetDeleteRequestQueryForGenesys(IEnumerable<long> contactsToDelete, ILogger logger)
+        private string GetDeleteRequestQueryForGenesys(IEnumerable<long> contactsToDeleteFromGenesys, ILogger logger)
         {
             try
             {
                 string contactIds = "";
-                foreach (long contact in contactsToDelete)
+                foreach (long contact in contactsToDeleteFromGenesys)
                 {
                     contactIds += $"{contact},";
                 }
@@ -231,7 +231,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="queryArgs">Content.<see cref="string"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns thelist of contacts from Genesys.</returns>
-        private async Task<IEnumerable<GetContactsExportDataResponse>> GetContactsFromContactListExportWithQueryArgs(string queryArgs, ILogger logger)
+        private async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExportWithQueryArgs(string queryArgs, ILogger logger)
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
@@ -256,13 +256,13 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
                 using StreamReader reader = new(responseStream);
                 using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
-                _ = csv.Context.RegisterClassMap<GetContactsExportDataResponseMap>();
-                return csv.GetRecords<GetContactsExportDataResponse>().ToList();
+                _ = csv.Context.RegisterClassMap<GetContactsExportDataFromGenesysResponseMap>();
+                return csv.GetRecords<GetContactsExportDataFromGenesysResponse>().ToList();
             }
             else
             {
                 logger.LogError($"Failed to call the get contacts API endpoint with response: {response}");
-                return new List<GetContactsExportDataResponse>();
+                return new List<GetContactsExportDataFromGenesysResponse>();
             }
         }
 
@@ -272,7 +272,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns the list of contacts added to Genesys.</returns>
-        private async Task<IEnumerable<AddContactsResponse>> AddContactsToContactListWithStringContent(StringContent content, ILogger logger)
+        private async Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactListWithStringContent(StringContent content, ILogger logger)
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
@@ -290,12 +290,12 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 string responseContent = await response.Content.ReadAsStringAsync();
 
                 // Return the deserialized response
-                return JsonConvert.DeserializeObject<IEnumerable<AddContactsResponse>>(responseContent);
+                return JsonConvert.DeserializeObject<IEnumerable<AddContactsToGenesysResponse>>(responseContent);
             }
             else
             {
-                logger.LogError($"Failed to call the add contacts API endpoint with response: {response}");
-                return new List<AddContactsResponse>();
+                logger.LogError($"Failed to call the Add Contacts API endpoint with response: {response}");
+                return new List<AddContactsToGenesysResponse>();
             }
         }
 
@@ -305,7 +305,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns the updated list of contacts.</returns>
-        private async Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactListWithStringContent(StringContent content, ILogger logger)
+        private async Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactListWithStringContent(StringContent content, ILogger logger)
         {
             if (content != null)
             {
@@ -326,15 +326,15 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                     string responseContent = await response?.Content?.ReadAsStringAsync();
 
                     // Return
-                    return JsonConvert.DeserializeObject<IEnumerable<UpdateContactsResponse>>(responseContent);
+                    return JsonConvert.DeserializeObject<IEnumerable<UpdateContactsInGenesysResponse>>(responseContent);
                 }
                 else
                 {
-                    logger.LogError($"Failed to call the update contacts API endpoint with response: {response}");
-                    return new List<UpdateContactsResponse>();
+                    logger.LogError($"Failed to call the Update Contacts API endpoint with response: {response}");
+                    return new List<UpdateContactsInGenesysResponse>();
                 }
             }
-            else { return new List<UpdateContactsResponse>(); }
+            else { return new List<UpdateContactsInGenesysResponse>(); }
         }
 
         /// <summary>
@@ -367,7 +367,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 }
                 else
                 {
-                    logger.LogError($"Failed to call the delete contacts API endpoint with response: {response}");
+                    logger.LogError($"Failed to call the Delete Contacts API endpoint with response: {response}");
                     return 0;
                 }
             }

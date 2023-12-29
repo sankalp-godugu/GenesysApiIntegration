@@ -42,18 +42,18 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _logger?.LogInformation("********* Member PD Order => Genesys Execution Started **********");
 
                     // TODO: swap the following before deploying code
-                    string APPConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
+                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
 
                     // TODO: remove for PROD deployment
-                    IEnumerable<int> result = await _dataLayer.ExecuteReader<int>(SQLConstants.InsertPostDischargeInfoTestData, new(), APPConnectionString, _logger);
+                    IEnumerable<int> insertPostDischargeInfoTestDataResponse = await _dataLayer.ExecuteReader<int>(SQLConstants.InsertPostDischargeInfoTestData, new(), appConnectionString, _logger);
 
-                    // ---------------------------------- REFRESH MEMBER CONTACT STATUS TABLE ------------------------------
+                    // ---------------------------------- REFRESH CONTACT STATUS TABLE ------------------------------
 
                     _logger?.LogInformation("Started refreshing Genesys info table");
 
-                    IEnumerable<string> refreshResult = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysMemberContactInfo, new(), APPConnectionString, _logger);
+                    IEnumerable<string> refreshGenesysContactInfoResponse = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysContactInfo, new(), appConnectionString, _logger);
 
-                    _logger?.LogInformation($"Ended refreshing Genesys info table with result: {refreshResult}");
+                    _logger?.LogInformation($"Ended refreshing Genesys info table with result: {refreshGenesysContactInfoResponse}");
 
                     // ----------------------------------- GET MEMBERS BY LANG -----------------------------------------
 
@@ -66,77 +66,77 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     _logger?.LogInformation("Started fetching the PD orders for all members");
 
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToProcess = await _dataLayer.ExecuteReader<PostDischargeInfo_GenesysMemberContactInfo>(SQLConstants.GetPDAndGenesysInfo, sqlParams, APPConnectionString, _logger);
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToProcessInGenesys = await _dataLayer.ExecuteReader<PostDischargeInfo_GenesysContactInfo>(SQLConstants.GetPDAndGenesysInfo, sqlParams, appConnectionString, _logger);
 
-                    _logger?.LogInformation($"Ended fetching the PD orders with count: {contactsToProcess?.Count()}");
+                    _logger?.LogInformation($"Ended fetching the PD orders with count: {contactsToProcessInGenesys?.Count()}");
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
 
-                    IEnumerable<GetContactsExportDataResponse> getContactsExportDataResult = new List<GetContactsExportDataResponse>();
-                    if (contactsToProcess.Any())
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> getContactsExportDataFromGenesysResponse = new List<GetContactsExportDataFromGenesysResponse>();
+                    if (contactsToProcessInGenesys.Any())
                     {
                         _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        getContactsExportDataResult = await _genesysClientService?.GetContactsFromContactListExport(_logger);
+                        getContactsExportDataFromGenesysResponse = await _genesysClientService?.GetContactsFromContactListExport(_logger);
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
                     }
 
                     // -------------------------------------- ADD CONTACTS TO GENESYS --------------------------------------
 
-                    // if member already in contact list with same discharge date and/or disposition code of not interested - DO NOT ADD
-                    IEnumerable<AddContactsResponse> addContactsResult = new List<AddContactsResponse>();
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToAdd = contactsToProcess.Where(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList);//.Except(contactsInGenesys);
-                    if (contactsToAdd.Any())
+                    // if contact already in contact list with same discharge date and/or disposition code of not interested - DO NOT ADD
+                    IEnumerable<AddContactsToGenesysResponse> addContactsToGenesysResponse = new List<AddContactsToGenesysResponse>();
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToAddToGenesys = contactsToProcessInGenesys.Where(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList);//.Except(contactsInGenesys);
+                    if (contactsToAddToGenesys.Any())
                     {
                         _logger?.LogInformation($"Started adding contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        addContactsResult = await _genesysClientService?.AddContactsToContactList(contactsToAdd, _logger);
+                        addContactsToGenesysResponse = await _genesysClientService?.AddContactsToContactList(contactsToAddToGenesys, _logger);
                         _logger?.LogInformation($"Successfully added contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
-                        foreach (PostDischargeInfo_GenesysMemberContactInfo contact in contactsToAdd)
+                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToAddToGenesys)
                         {
-                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "ADD", 2, _dataLayer);
+                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "ADD", 2, _dataLayer);
                         }
                     }
 
                     // -------------------------------------- UPDATE CONTACTS IN GENESYS --------------------------------------
 
-                    // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
-                    IEnumerable<UpdateContactsResponse> updateContactsResult = new List<UpdateContactsResponse>();
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToUpdate = contactsToProcess.Where(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList);
-                    if (contactsToUpdate.Any())
+                    // if contact already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+                    IEnumerable<UpdateContactsInGenesysResponse> updateContactsInGenesysResponse = new List<UpdateContactsInGenesysResponse>();
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys = contactsToProcessInGenesys.Where(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList);
+                    if (contactsToUpdateInGenesys.Any())
                     {
                         _logger?.LogInformation($"Started updating contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        updateContactsResult = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdate, _logger);
+                        updateContactsInGenesysResponse = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdateInGenesys, _logger);
                         _logger?.LogInformation($"Successfully updating contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
-                        foreach (PostDischargeInfo_GenesysMemberContactInfo contact in contactsToUpdate)
+                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateInGenesys)
                         {
-                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "UPDATE", 2, _dataLayer);
+                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "UPDATE", 2, _dataLayer);
                         }
                     }
 
                     // -------------------------------------- DELETE CONTACTS FROM GENESYS --------------------------------------
 
-                    // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
-                    long deleteResult;
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToRemove = contactsToProcess.Where(c => c.ShouldRemoveFromContactList);
-                    if (contactsToRemove.Any())
+                    // if contact already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
+                    long removeContactsResult;
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToRemoveFromGenesys = contactsToProcessInGenesys.Where(c => c.ShouldRemoveFromContactList);
+                    if (contactsToRemoveFromGenesys.Any())
                     {
                         _logger?.LogInformation($"Started deleting contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
-                        IEnumerable<long> allContactsToDelete = contactsToRemove.Select(c => c.PostDischargeId);
-                        IEnumerable<long> contactsWithNoDialWrapUpCode = getContactsExportDataResult
+                        IEnumerable<long> allContactsToRemoveFromGenesys = contactsToRemoveFromGenesys.Select(c => c.PostDischargeId);
+                        IEnumerable<long> contactsWithNoDialWrapUpCode = getContactsExportDataFromGenesysResponse
                         .Where(c => AgentWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode))
                         .Select(c => long.Parse(c.Id));
 
-                        allContactsToDelete.ToList().AddRange(contactsWithNoDialWrapUpCode.Where(c2 => allContactsToDelete.All(c1 => c1 != c2)));
+                        allContactsToRemoveFromGenesys.ToList().AddRange(contactsWithNoDialWrapUpCode.Where(c2 => allContactsToRemoveFromGenesys.All(c1 => c1 != c2)));
 
-                        deleteResult = await _genesysClientService?.DeleteContactsFromContactList(allContactsToDelete, _logger);
+                        removeContactsResult = await _genesysClientService?.DeleteContactsFromContactList(allContactsToRemoveFromGenesys, _logger);
 
                         _logger?.LogInformation($"Successfully deleted contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
-                        foreach (PostDischargeInfo_GenesysMemberContactInfo contact in contactsToRemove)
+                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToRemoveFromGenesys)
                         {
-                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "DEL", 2, _dataLayer);
+                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "DEL", 2, _dataLayer);
                         }
                     }
 
@@ -160,19 +160,19 @@ namespace GenesysContactsProcessJob.TriggerUtilities
         /// <param name="genesysContact">Genesys contact.</param>
         /// <param name="currentProcessId">Current process identifier.</param>
         /// <param name="genesysContactReference">Genesys contact reference.</param>
-        private static async Task UpdateGenesysContactStatus(ILogger logger, string appConnectionString, PostDischargeInfo_GenesysMemberContactInfo genesysContact, long genesysContactReference, string action, long currentProcessId, IDataLayer dataLayer)
+        private static async Task UpdateGenesysContactStatus(ILogger logger, string appConnectionString, PostDischargeInfo_GenesysContactInfo genesysContact, long genesysContactReference, string action, long currentProcessId, IDataLayer dataLayer)
         {
             logger?.LogInformation($"Updating Genesys contact details with contact id :{genesysContact?.PostDischargeId}");
 
-            int result = await dataLayer.ExecuteNonQueryForGenesys(SQLConstants.UpdateGenesysMemberContactInfo, genesysContact.PostDischargeId, action, currentProcessId, appConnectionString, logger);
+            int result = await dataLayer.ExecuteNonQueryForGenesys(SQLConstants.UpdateGenesysContactInfo, genesysContact.PostDischargeId, action, currentProcessId, appConnectionString, logger);
 
             if (result == 1)
             {
-                logger?.LogInformation($"Updated the Genesys member contact status: {genesysContactReference}.");
+                logger?.LogInformation($"Updated the Genesys contact status: {genesysContactReference}.");
             }
             else
             {
-                logger?.LogInformation($"Failed to update the Genesys member contact status: {genesysContactReference}.");
+                logger?.LogInformation($"Failed to update the Genesys contact status: {genesysContactReference}.");
             }
         }
     }

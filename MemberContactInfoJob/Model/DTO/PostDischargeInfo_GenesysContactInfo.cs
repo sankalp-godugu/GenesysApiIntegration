@@ -2,7 +2,7 @@
 
 namespace GenesysContactsProcessJob.Model.DTO
 {
-    public class PostDischargeInfo_GenesysMemberContactInfo
+    public class PostDischargeInfo_GenesysContactInfo
     {
         public long PostDischargeId { get; set; }
         public string NHMemberId { get; set; }
@@ -42,7 +42,7 @@ namespace GenesysContactsProcessJob.Model.DTO
         public DateTime ModifyDate { get; set; }
 
         // genesys specific field
-        public long GenesysMemberContactInfoId { get; set; }
+        public long GenesysContactInfoId { get; set; }
         public string MemberName { get; set; }
         public string CarrierName { get; set; }
         public string Region { get; set; }

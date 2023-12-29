@@ -23,7 +23,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// </summary>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of contacts from Genesys.</returns>
-        public Task<IEnumerable<GetContactsExportDataResponse>> GetContactsFromContactListExport(ILogger logger);
+        public Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExport(ILogger logger);
 
         /// <summary>
         /// Adds list of contacts in Genesys asychronously.
@@ -31,7 +31,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of added contacts in Genesys.</returns>
-        public Task<IEnumerable<AddContactsResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToAdd, ILogger logger);
+        public Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToAdd, ILogger logger);
 
         /// <summary>
         /// Updates list of contacts in Genesys.
@@ -39,7 +39,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// <param name="contactsToUpdate">Contacts To Update.<see cref="ContactsToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of updated contacts in Genesys.</returns>
-        public Task<IEnumerable<UpdateContactsResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToUpdate, ILogger logger);
+        public Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdate, ILogger logger);
 
         /// <summary>
         /// Deletes list of contacts in Genesys asychronously.

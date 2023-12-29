@@ -98,13 +98,13 @@ namespace GenesysContactsProcessJob.DataLayer.Services
                 int result = (int)resultParameter.Value;
 
                 // Log the result
-                logger.LogInformation($"UpdateGenesysReferenceForMemberContact result: {result}");
+                logger.LogInformation($"UpdateGenesysReferenceForContact result: {result}");
 
                 return result;
             }
             catch (Exception ex)
             {
-                logger.LogError($"Error updating Genesys reference: {ex.Message}");
+                logger.LogError($"Error updating Genesys contact reference: {ex.Message}");
                 return -1;
             }
             finally

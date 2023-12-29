@@ -15,7 +15,7 @@ namespace GenesysContactsProcessJob.Utilities
             MapperConfiguration config = new(cfg =>
             {
                 //Configuring PostDischargeInfo to AddContactsRequest
-                _ = cfg.CreateMap<PostDischargeInfo_GenesysMemberContactInfo, AddContactsRequest>()
+                _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, AddContactsRequest>()
                     .ForMember(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForMember(acr => acr.ContactListId, opt => opt.MapFrom(src => configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish")))
                     .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
@@ -32,7 +32,7 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
 
                 // UpdateContactsRequest
-                _ = cfg.CreateMap<PostDischargeInfo_GenesysMemberContactInfo, UpdateContactsRequest>()
+                _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, UpdateContactsRequest>()
                     .ForMember(ucr => ucr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForMember(ucr => ucr.ContactListId, opt => opt.MapFrom(src => configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish")))
                     .ForPath(ucr => ucr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
@@ -48,7 +48,7 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(ucr => ucr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
                     .ForPath(ucr => ucr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
 
-                _ = cfg.CreateMap<GetContactsResponse, PostDischargeInfo_GenesysMemberContactInfo>()
+                _ = cfg.CreateMap<GetContactsResponse, PostDischargeInfo_GenesysContactInfo>()
                     .ForMember(gcr => gcr.PostDischargeId, opt => opt.MapFrom(src => src.Id))
                     .ForPath(gcr => gcr.NHMemberId, opt => opt.MapFrom(src => src.Data.NhMemberId))
                     .ForPath(gcr => gcr.MemberName, opt => opt.MapFrom(src => src.Data.MemberName))

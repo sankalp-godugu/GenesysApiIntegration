@@ -23,7 +23,7 @@ namespace GenesysContactsProcessJob
     /// <summary>
     /// Azure timer function for processing all contacts.
     /// </summary>
-    public class GenesysMemberContactsProcessor
+    public class GenesysContactsProcessor
     {
         #region Private ReadOnly Fields
 
@@ -41,7 +41,7 @@ namespace GenesysContactsProcessJob
         /// <param name="dataLayer">Datalayer.<see cref="IDataLayer"/></param>
         /// <param name="configuration">Configuration.<see cref="IConfiguration"/></param>
         /// <param name="genesysClientService">Genesys client service.<see cref="IGenesysClientService"/></param>
-        public GenesysMemberContactsProcessor(IDataLayer dataLayer, IConfiguration configuration, IGenesysClientService genesysClientService)
+        public GenesysContactsProcessor(IDataLayer dataLayer, IConfiguration configuration, IGenesysClientService genesysClientService)
         {
             _dataLayer = dataLayer ?? throw new ArgumentNullException(nameof(dataLayer));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -78,7 +78,7 @@ namespace GenesysContactsProcessJob
             //_ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, "SPA");
         }
 
-        private IEnumerable<AddContactsRequest> Map(IEnumerable<GenesysMemberContactInfo> dqr)
+        private IEnumerable<AddContactsRequest> Map(IEnumerable<GenesysContactInfo> dqr)
         {
             //var config = new MapperConfiguration(cfg => cfg.CreateMap<IEnumerable<DatabaseQueryResult>, List<AddContactsRequest>>());
             //var mapper = new Mapper(config);

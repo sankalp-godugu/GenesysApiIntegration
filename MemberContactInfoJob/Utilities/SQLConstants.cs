@@ -13,12 +13,12 @@
         /// <summary>
         /// Refreshs genesys tbl.
         /// </summary>
-        public static readonly string RefreshGenesysMemberContactInfo = "[meals].[RefreshGenesysMemberContactInfo]";
+        public static readonly string RefreshGenesysContactInfo = "[meals].[RefreshGenesysContactInfo]";
 
         /// <summary>
         /// Updates the Genesys reference for member contacts.
         /// </summary>
-        public static readonly string UpdateGenesysMemberContactInfo = "[meals].[UpdateGenesysMemberContactInfo]";
+        public static readonly string UpdateGenesysContactInfo = "[meals].[UpdateGenesysContactInfo]";
 
         // TODO: remove for PROD deployment
         public static readonly string InsertPostDischargeInfoTestData = "[meals].[InsertPostDischargeInfoTestData]";
