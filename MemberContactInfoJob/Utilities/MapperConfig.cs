@@ -2,12 +2,14 @@
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Request;
 using GenesysContactsProcessJob.Model.Response;
+using Microsoft.Extensions.Configuration;
+using System;
 
 namespace GenesysContactsProcessJob.Utilities
 {
     public class MapperConfig
     {
-        public static Mapper InitializeAutomapper()
+        public static Mapper InitializeAutomapper(IConfiguration configuration)
         {
             //Provide all the Mapping Configuration
             MapperConfiguration config = new(cfg =>
@@ -15,6 +17,7 @@ namespace GenesysContactsProcessJob.Utilities
                 //Configuring PostDischargeInfo to AddContactsRequest
                 _ = cfg.CreateMap<PostDischargeInfo_GenesysMemberContactInfo, AddContactsRequest>()
                     .ForMember(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
+                    .ForMember(acr => acr.ContactListId, opt => opt.MapFrom(src => configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish")))
                     .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(acr => acr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
                     .ForPath(acr => acr.Data.Language, opt => opt.MapFrom(src => src.Language))
@@ -31,6 +34,7 @@ namespace GenesysContactsProcessJob.Utilities
                 // UpdateContactsRequest
                 _ = cfg.CreateMap<PostDischargeInfo_GenesysMemberContactInfo, UpdateContactsRequest>()
                     .ForMember(ucr => ucr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
+                    .ForMember(ucr => ucr.ContactListId, opt => opt.MapFrom(src => configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish")))
                     .ForPath(ucr => ucr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(ucr => ucr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
                     .ForPath(ucr => ucr.Data.Language, opt => opt.MapFrom(src => src.Language))

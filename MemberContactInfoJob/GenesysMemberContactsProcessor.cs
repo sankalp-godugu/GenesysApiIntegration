@@ -82,7 +82,7 @@ namespace GenesysContactsProcessJob
         {
             //var config = new MapperConfiguration(cfg => cfg.CreateMap<IEnumerable<DatabaseQueryResult>, List<AddContactsRequest>>());
             //var mapper = new Mapper(config);
-            Mapper mapper = MapperConfig.InitializeAutomapper();
+            Mapper mapper = MapperConfig.InitializeAutomapper(_configuration);
             return mapper.Map<List<AddContactsRequest>>(dqr);
         }
 
