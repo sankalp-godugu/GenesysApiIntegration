@@ -149,6 +149,18 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             return token;
         }
 
+        private void SetCacheToken(AccessTokenResponse accessTokenResponse)
+        {
+            //In a real-world application we should store the token in a cache service and set an TTL.
+            Environment.SetEnvironmentVariable("token", accessTokenResponse.AccessToken);
+        }
+
+        private static string RetrieveCachedToken()
+        {
+            //In a real-world application, we should retrieve the token from a cache service.
+            return Environment.GetEnvironmentVariable("token");
+        }
+
         /// <summary>
         /// Gets the API request body for Genesys.
         /// </summary>

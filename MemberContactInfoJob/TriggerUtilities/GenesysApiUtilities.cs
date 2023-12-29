@@ -79,6 +79,10 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         getContactsExportDataFromGenesysResponse = await _genesysClientService?.GetContactsFromContactListExport(_logger);
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
                     }
+
+                    // -------------------------------------- REMOVE CONTACTS TO GENESYS --------------------------------------
+
+                    long removeContactsFromGenesysResponse = -1;
                     IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToRemoveFromGenesys = contactsToProcessInGenesys.Where(c => c.ShouldRemoveFromContactList);
                     IEnumerable<long> contactsWithNoDialWrapUpCode = getContactsExportDataFromGenesysResponse
                     .Where(c => AgentWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)).Select(c => long.Parse(c.Id));
@@ -90,14 +94,14 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     {
                         _logger?.LogInformation($"Started removing contacts via Genesys API from the contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
-                        //removeContactsFromGenesysResponse = await _genesysClientService?.DeleteContactsFromContactList(allContactsToRemoveFromGenesys, _logger);
+                        removeContactsFromGenesysResponse = await _genesysClientService?.DeleteContactsFromContactList(allContactsToRemoveFromGenesys, _logger);
 
                         _logger?.LogInformation($"Successfully removed contacts from contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
-                        /*foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToRemoveFromGenesys)
+                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToRemoveFromGenesys)
                         {
                             await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "REMOVED", 2, _dataLayer);
-                        }*/
+                        }
                     }
 
                     // -------------------------------------- ADD CONTACTS TO GENESYS --------------------------------------
@@ -125,6 +129,12 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     List<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys = contactsToProcessInGenesys.Where(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList).ToList();
                     // don't update contacts that have been removed from contact list
                     _ = contactsToUpdateInGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId));
+                    // do not reset AttemptCountTotal on update - keep the value from Genesys
+                    foreach (GetContactsExportDataFromGenesysResponse contact in getContactsExportDataFromGenesysResponse)
+                    {
+                        contactsToUpdateInGenesys.FirstOrDefault(c => c.PostDischargeId == int.Parse(contact.Id)).AttemptCountTotal = int.Parse(contact.Data.AttemptCountTotal);
+                    }
+
                     if (contactsToUpdateInGenesys.Any())
                     {
                         _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");

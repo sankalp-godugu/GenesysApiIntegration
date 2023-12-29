@@ -7,7 +7,7 @@ namespace GenesysContactsProcessJob.Utilities
         public static readonly List<string> WrapUpCodesForDeletion = new()
         {
             "Disconnected Number",
-            "DNC - Do Not Call",
+            "DNC – Do Not Call",
             "IN Hospital",
             "Benefits Exhausted",
             "Not Interested",

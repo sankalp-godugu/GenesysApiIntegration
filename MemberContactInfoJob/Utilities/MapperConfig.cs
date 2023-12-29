@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Request;
-using GenesysContactsProcessJob.Model.Response;
 using Microsoft.Extensions.Configuration;
 using System;
 
@@ -29,7 +28,11 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(acr => acr.Data.DischargeDate, opt => opt.MapFrom(src => src.DischargeDate))
                     .ForPath(acr => acr.Data.DayCount, opt => opt.MapFrom(src => src.DayCount))
                     .ForPath(acr => acr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
-                    .ForPath(acr => acr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
+                    .ForPath(acr => acr.Data.AttemptCountTotal, opt =>
+                    {
+                        //opt.Condition(c => c.Source.DayCount > 1);
+                        opt.MapFrom(src => src.AttemptCountTotal);
+                    });
 
                 // UpdateContactsRequest
                 _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, UpdateContactsRequest>()
@@ -40,28 +43,17 @@ namespace GenesysContactsProcessJob.Utilities
                     .ForPath(ucr => ucr.Data.Language, opt => opt.MapFrom(src => src.Language))
                     .ForPath(ucr => ucr.Data.Address, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Address1) ? src.Address2 : src.Address1))
                     .ForPath(ucr => ucr.Data.Region, opt => opt.MapFrom(src => src.Region))
-                    .ForPath(ucr => ucr.Data.PhoneNumber, opt => opt.MapFrom(src => "954-889-6532"/*src.PhoneNbr*/))
+                    .ForPath(ucr => ucr.Data.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNbr))
                     .ForPath(ucr => ucr.Data.CarrierName, opt => opt.MapFrom(src => src.CarrierName))
                     .ForPath(ucr => ucr.Data.LoadDate, opt => opt.MapFrom(src => src.LoadDate))
                     .ForPath(ucr => ucr.Data.DischargeDate, opt => opt.MapFrom(src => src.DischargeDate))
                     .ForPath(ucr => ucr.Data.DayCount, opt => opt.MapFrom(src => src.DayCount))
                     .ForPath(ucr => ucr.Data.AttemptCountToday, opt => opt.MapFrom(src => src.AttemptCountToday))
-                    .ForPath(ucr => ucr.Data.AttemptCountTotal, opt => opt.MapFrom(src => src.AttemptCountTotal));
-
-                _ = cfg.CreateMap<GetContactsResponse, PostDischargeInfo_GenesysContactInfo>()
-                    .ForMember(gcr => gcr.PostDischargeId, opt => opt.MapFrom(src => src.Id))
-                    .ForPath(gcr => gcr.NHMemberId, opt => opt.MapFrom(src => src.Data.NhMemberId))
-                    .ForPath(gcr => gcr.MemberName, opt => opt.MapFrom(src => src.Data.MemberName))
-                    //.ForPath(ucr => ucr.Language, opt => opt.MapFrom(src => src.Data.Language))
-                    //.ForPath(gcr => string.IsNullOrWhiteSpace(gcr.Address1) ? gcr.Address2 : gcr.Address1, opt => opt.MapFrom(src => src.Data.Address))
-                    .ForPath(gcr => gcr.Region, opt => opt.MapFrom(src => src.Data.Region))
-                    .ForPath(gcr => gcr.PhoneNbr, opt => opt.MapFrom(src => src.Data.PhoneNumber))
-                    .ForPath(gcr => gcr.CarrierName, opt => opt.MapFrom(src => src.Data.CarrierName))
-                    .ForPath(gcr => gcr.LoadDate, opt => opt.MapFrom(src => src.Data.LoadDate))
-                    .ForPath(gcr => gcr.DischargeDate, opt => opt.MapFrom(src => src.Data.DischargeDate))
-                    .ForPath(gcr => gcr.DayCount, opt => opt.MapFrom(src => src.Data.DayCount))
-                    .ForPath(gcr => gcr.AttemptCountToday, opt => opt.MapFrom(src => src.Data.AttemptCountToday))
-                    .ForPath(gcr => gcr.AttemptCountTotal, opt => opt.MapFrom(src => src.Data.AttemptCountTotal));
+                    .ForPath(ucr => ucr.Data.AttemptCountTotal, opt =>
+                    {
+                        //opt.Condition(c => c.Source.DayCount <= 1);
+                        opt.MapFrom(src => src.AttemptCountTotal);
+                    });
             });
 
             //Create an Instance of Mapper and return that Instance
