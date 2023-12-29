@@ -72,40 +72,40 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
 
-                    IEnumerable<GetContactsExportDataResponse> getResult = new List<GetContactsExportDataResponse>();
+                    IEnumerable<GetContactsExportDataResponse> getContactsExportDataResult = new List<GetContactsExportDataResponse>();
                     if (contactsToProcess.Any())
                     {
                         _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        getResult = await _genesysClientService?.GetContactsFromContactListExport(_logger);
+                        getContactsExportDataResult = await _genesysClientService?.GetContactsFromContactListExport(_logger);
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
                     }
 
                     // -------------------------------------- ADD CONTACTS TO GENESYS --------------------------------------
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested - DO NOT ADD
-                    IEnumerable<AddContactsResponse> addResult = new List<AddContactsResponse>();
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToAdd = contactsToProcess.TakeWhile(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList);//.Except(contactsInGenesys);
+                    IEnumerable<AddContactsResponse> addContactsResult = new List<AddContactsResponse>();
+                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToAdd = contactsToProcess.Where(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList);//.Except(contactsInGenesys);
                     if (contactsToAdd.Any())
                     {
                         _logger?.LogInformation($"Started adding contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        addResult = await _genesysClientService?.AddContactsToContactList(contactsToAdd, _logger);
+                        addContactsResult = await _genesysClientService?.AddContactsToContactList(contactsToAdd, _logger);
                         _logger?.LogInformation($"Successfully added contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
                         foreach (PostDischargeInfo_GenesysMemberContactInfo contact in contactsToAdd)
                         {
-                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "AFTER_ADD", 2, _dataLayer);
+                            await UpdateGenesysContactStatus(_logger, APPConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "ADD", 2, _dataLayer);
                         }
                     }
 
                     // -------------------------------------- UPDATE CONTACTS IN GENESYS --------------------------------------
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
-                    IEnumerable<UpdateContactsResponse> updateResult = new List<UpdateContactsResponse>();
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToUpdate = contactsToProcess.TakeWhile(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList);
+                    IEnumerable<UpdateContactsResponse> updateContactsResult = new List<UpdateContactsResponse>();
+                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToUpdate = contactsToProcess.Where(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList);
                     if (contactsToUpdate.Any())
                     {
                         _logger?.LogInformation($"Started updating contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        updateResult = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdate, _logger);
+                        updateContactsResult = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdate, _logger);
                         _logger?.LogInformation($"Successfully updating contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
                         foreach (PostDischargeInfo_GenesysMemberContactInfo contact in contactsToUpdate)
@@ -118,13 +118,13 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // if member already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
                     long deleteResult;
-                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToRemove = contactsToProcess.TakeWhile(c => c.ShouldRemoveFromContactList);
+                    IEnumerable<PostDischargeInfo_GenesysMemberContactInfo> contactsToRemove = contactsToProcess.Where(c => c.ShouldRemoveFromContactList);
                     if (contactsToRemove.Any())
                     {
                         _logger?.LogInformation($"Started deleting contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
                         IEnumerable<long> allContactsToDelete = contactsToRemove.Select(c => c.PostDischargeId);
-                        IEnumerable<long> contactsWithNoDialWrapUpCode = getResult
+                        IEnumerable<long> contactsWithNoDialWrapUpCode = getContactsExportDataResult
                         .Where(c => AgentWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode))
                         .Select(c => long.Parse(c.Id));
 

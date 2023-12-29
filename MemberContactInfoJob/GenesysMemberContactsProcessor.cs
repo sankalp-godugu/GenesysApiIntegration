@@ -73,9 +73,9 @@ namespace GenesysContactsProcessJob
         [FunctionName("AetnaSpanishContactsProcessor")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
-        public async Task ProcessSpanishContactsAsync([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
+        public void ProcessSpanishContacts([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
-            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, "SPA");
+            //_ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, "SPA");
         }
 
         private IEnumerable<AddContactsRequest> Map(IEnumerable<GenesysMemberContactInfo> dqr)
