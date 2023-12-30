@@ -13,7 +13,7 @@
         /// <summary>
         /// Refreshs genesys tbl.
         /// </summary>
-        public static readonly string RefreshGenesysContactInfo = "[meals].[RefreshGenesysContactInfo]";
+        public static readonly string RefreshGenesysContactInfo = "[meals].[RefreshGenesysContactInfoTest]";
 
         /// <summary>
         /// Updates the Genesys reference for member contacts.

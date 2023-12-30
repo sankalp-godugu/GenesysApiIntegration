@@ -60,7 +60,6 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     // SQL parameters.
                     Dictionary<string, object> sqlParams = new()
                 {
-                    // TODO: swap the following before deploying code
                     { "@lang", _configuration["Language"] ?? lang },
                 };
 
@@ -122,32 +121,49 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         }
                     }
 
-                    // -------------------------------------- UPDATE CONTACTS IN GENESYS --------------------------------------
+                    // -------------------------------------- UPDATE CONTACTS TO BE DIALED IN GENESYS --------------------------------------
 
                     IEnumerable<UpdateContactsInGenesysResponse> updateContactsInGenesysResponse = new List<UpdateContactsInGenesysResponse>();
                     // if contact already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
                     List<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys = contactsToProcessInGenesys.Where(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList).ToList();
                     // don't update contacts that have been removed from contact list
                     _ = contactsToUpdateInGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId));
-                    // do not reset AttemptCountTotal on update - keep the value from Genesys
 
+                    // do not reset AttemptCountTotal on update - keep the value as is in Genesys
                     if (contactsToUpdateInGenesys.Count() > 0)
                     {
                         foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys in contactsToUpdateInGenesys)
                         {
-                            contactToUpdateInGenesys.AttemptCountToday = int.Parse(getContactsExportDataFromGenesysResponse.FirstOrDefault(c => contactToUpdateInGenesys.PostDischargeId == long.Parse(c.Id)).Data.AttemptCountToday);
-                        }
-
-                        foreach (GetContactsExportDataFromGenesysResponse contact in getContactsExportDataFromGenesysResponse)
-                        {
-                            contactsToUpdateInGenesys.FirstOrDefault(c => c.PostDischargeId == int.Parse(contact.Id)).AttemptCountTotal = int.Parse(contact.Data.AttemptCountTotal);
+                            contactToUpdateInGenesys.AttemptCountTotal = int.Parse(getContactsExportDataFromGenesysResponse.FirstOrDefault(c => contactToUpdateInGenesys.PostDischargeId == long.Parse(c.Id)).Data.AttemptCountTotal);
                         }
                     }
 
-                    if (contactsToUpdateInGenesys.Any())
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateAndDialInGenesys = contactsToUpdateInGenesys.Where(c => c.DayCount <= 20 || c.DayCount % 2 == 0);
+
+                    if (contactsToUpdateAndDialInGenesys.Any())
                     {
                         _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
-                        updateContactsInGenesysResponse = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdateInGenesys, _logger);
+                        updateContactsInGenesysResponse = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdateAndDialInGenesys, _logger);
+                        _logger?.LogInformation($"Successfully updated contacts in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+
+                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateAndDialInGenesys)
+                        {
+                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "UPDATED", 2, _dataLayer);
+                        }
+                    }
+
+                    // ---------------------------------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS ----------------------------------------------
+
+                    UpdateContactsInGenesysResponse updateContactInGenesysResponse = new();
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateOnlyInGenesys = contactsToUpdateInGenesys.Where(c => c.DayCount > 20 && c.DayCount % 2 == 1);
+
+                    if (contactsToUpdateOnlyInGenesys.Any())
+                    {
+                        _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateOnlyInGenesys in contactsToUpdateOnlyInGenesys)
+                        {
+                            updateContactInGenesysResponse = await _genesysClientService?.UpdateContactInContactList(contactToUpdateOnlyInGenesys, _logger);
+                        }
                         _logger?.LogInformation($"Successfully updated contacts in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
 
                         foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateInGenesys)

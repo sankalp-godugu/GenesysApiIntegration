@@ -95,6 +95,12 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             return await UpdateContactsInContactListWithStringContent(content, logger);
         }
 
+        public async Task<UpdateContactsInGenesysResponse> UpdateContactInContactList(PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys, ILogger logger)
+        {
+            StringContent content = GetUpdateRequestBodyForGenesys(contactToUpdateInGenesys, logger);
+            return await UpdateContactInContactListWithStringContent(contactToUpdateInGenesys.PostDischargeId, content, logger);
+        }
+
         /// <summary>
         /// Deletes the contacts in Genesys asynchronously.
         /// </summary>
@@ -171,10 +177,10 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             try
             {
                 Mapper mapper = MapperConfig.InitializeAutomapper(_configuration);
-                IEnumerable<AddContactsRequest> gcr = mapper.Map<IEnumerable<AddContactsRequest>>(contactsToProcess);
+                IEnumerable<AddContactsRequest> ucr = mapper.Map<IEnumerable<AddContactsRequest>>(contactsToProcess);
 
                 // Serialize the dynamic object to JSON
-                string jsonPayload = JsonConvert.SerializeObject(gcr, Formatting.Indented, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                string jsonPayload = JsonConvert.SerializeObject(ucr, Formatting.Indented, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 // Create StringContent from JSON payload
                 StringContent content = new(jsonPayload, Encoding.UTF8, "application/json");
@@ -183,6 +189,27 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             catch (Exception ex)
             {
                 logger.LogError($"Failed in processing the Add/Update request body for Genesys API call with exception message: {ex.Message}");
+                return null;
+            }
+        }
+
+        private StringContent GetUpdateRequestBodyForGenesys(PostDischargeInfo_GenesysContactInfo contactToProcess, ILogger logger)
+        {
+            try
+            {
+                Mapper mapper = MapperConfig.InitializeAutomapper(_configuration);
+                AddContactsRequest ucr = mapper.Map<AddContactsRequest>(contactToProcess);
+
+                // Serialize the dynamic object to JSON
+                string jsonPayload = JsonConvert.SerializeObject(ucr, Formatting.Indented, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+
+                // Create StringContent from JSON payload
+                StringContent content = new(jsonPayload, Encoding.UTF8, "application/json");
+                return content;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"Failed in processing the Update Single request body for Genesys API call with exception message: {ex.Message}");
                 return null;
             }
         }
@@ -345,6 +372,33 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 }
             }
             else { return new List<UpdateContactsInGenesysResponse>(); }
+        }
+
+        private async Task<UpdateContactsInGenesysResponse> UpdateContactInContactListWithStringContent(long id, StringContent content, ILogger logger)
+        {
+            // HttpClient
+            using HttpClient httpClient = await GetGenesysHttpClient();
+            string contactListId = _configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish");
+            string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+            Uri requestUri = new($"{baseUrl}/{contactListId}/contacts/{id}");
+
+            // Make the API request
+            HttpResponseMessage response = await httpClient.PutAsync(_configuration["Genesys:ApiEndPoints:UpdateContact"] ?? requestUri.OriginalString, content);
+
+            // Check if the request was successful
+            if (response.IsSuccessStatusCode)
+            {
+                // Read and deserialize the response content
+                string responseContent = await response?.Content?.ReadAsStringAsync();
+
+                // Return
+                return JsonConvert.DeserializeObject<UpdateContactsInGenesysResponse>(responseContent);
+            }
+            else
+            {
+                logger.LogError($"Error in Update Contacts API endpoint with response: {response}");
+                return new UpdateContactsInGenesysResponse();
+            }
         }
 
         /// <summary>

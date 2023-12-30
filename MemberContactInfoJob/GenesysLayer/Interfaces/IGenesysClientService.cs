@@ -42,6 +42,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         public Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys, ILogger logger);
 
         /// <summary>
+        /// Updates list of contacts in Genesys.
+        /// </summary>
+        /// <param name="contactToUpdateInGenesys">Contacts To Update.<see cref="ContactToUpdate"/></param>
+        /// <param name="logger">Logger.<see cref="ILogger"/></param>
+        /// <returns>Returns the list of updated contacts in Genesys.</returns>
+        public Task<UpdateContactsInGenesysResponse> UpdateContactInContactList(PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys, ILogger logger);
+
+        /// <summary>
         /// Deletes list of contacts in Genesys asychronously.
         /// </summary>
         /// <param name="contactsToRemoveFromGenesys">Contacts To Delete.<see cref="ContactsToDelete"/></param>
