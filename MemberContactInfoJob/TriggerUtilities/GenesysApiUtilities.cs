@@ -38,9 +38,6 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
 
-                    // TODO: remove for PROD deployment
-                    //IEnumerable<int> insertPostDischargeInfoTestDataResponse = await _dataLayer.ExecuteReader<int>(SQLConstants.InsertPostDischargeInfoTestData, new(), appConnectionString, _logger);
-
                     // ---------------------------------- REFRESH CONTACT STATUS TABLE ------------------------------
 
                     _logger?.LogInformation("Started refreshing Genesys Contact Info Reference table");
@@ -53,9 +50,9 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // SQL parameters.
                     Dictionary<string, object> sqlParams = new()
-                {
-                    { "@lang", lang },
-                };
+                    {
+                        { "@lang", lang },
+                    };
 
                     _logger?.LogInformation("Started fetching PD orders for all members");
 
