@@ -36,7 +36,8 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
                     _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Started **********");
 
-                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
+                    string appConnectionString = _configuration["DataBase:APPConnectionString"];
+                    //Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
 
                     // ---------------------------------- REFRESH CONTACT STATUS TABLE ------------------------------
 
