@@ -135,7 +135,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
         private async Task<AccessTokenResponse> AuthenticateAsync(HttpClient client)
         {
-            Uri baseUrl = new(Environment.GetEnvironmentVariable("AccessTokenUrl"));
+            Uri baseUrl = new(_configuration["Genesys:AppConfigurations:AccessTokenUrl"]);
+            //Environment.GetEnvironmentVariable("AccessTokenUrl"));
+
             Dictionary<string, string> form = new()
             {
                 {"grant_type", _configuration["Genesys:AppConfigurations:GrantType"]},
@@ -258,10 +260,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
+
             string contactListId = lang == Languages.English ?
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
             //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
-            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+
+            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
+            //Environment.GetEnvironmentVariable("BaseUrl");
+
             Uri requestUri = new($"{baseUrl}/{contactListId}/export?{queryArgs}");
 
             // Make the API request
@@ -306,7 +312,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
             //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
+            //Environment.GetEnvironmentVariable("BaseUrl");
+
             Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true");
 
             // Make the API request
@@ -345,7 +353,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
                 //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
+                //Environment.GetEnvironmentVariable("BaseUrl");
+
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true&clearSystemData=true");
 
                 // Make the API request
@@ -379,7 +389,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
             //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-            string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+            string baseUrl = _configuration["Genesys:Api:BaseUrl"];
+            //Environment.GetEnvironmentVariable("BaseUrl");
+
             Uri requestUri = new($"{baseUrl}/{contactListId}/contacts/{id}");
 
             // Make the API request
@@ -413,9 +425,13 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             {
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
+
                 string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
                 //Environment.GetEnvironmentVariable("AetnaEnglish");
-                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+
+                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
+                //Environment.GetEnvironmentVariable("BaseUrl");
+
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
 
                 // Make the API request

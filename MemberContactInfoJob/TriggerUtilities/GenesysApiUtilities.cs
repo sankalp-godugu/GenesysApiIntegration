@@ -63,12 +63,14 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
 
+                    string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys: AppConfigurations:AetnaSpanish"];
+
                     IEnumerable<GetContactsExportDataFromGenesysResponse> getContactsExportDataFromGenesysResponse = new List<GetContactsExportDataFromGenesysResponse>();
                     if (contactsToProcessInGenesys.Any())
                     {
-                        _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {contactListId}");
                         getContactsExportDataFromGenesysResponse = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
-                        _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {contactListId}");
                     }
 
                     // -------------------------------------- REMOVE CONTACTS TO GENESYS --------------------------------------
@@ -83,11 +85,11 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     if (allContactsToRemoveFromGenesys.Any())
                     {
-                        _logger?.LogInformation($"Started removing contacts via Genesys API from the contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Started removing contacts via Genesys API from the contact list with id: {contactListId}");
 
                         removeContactsFromGenesysResponse = await _genesysClientService?.DeleteContactsFromContactList(allContactsToRemoveFromGenesys, lang, _logger);
 
-                        _logger?.LogInformation($"Successfully removed contacts from contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Successfully removed contacts from contact list with id: {contactListId}");
 
                         foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToRemoveFromGenesys)
                         {
@@ -103,9 +105,11 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _ = contactsToAddToGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId));
                     if (contactsToAddToGenesys.Any())
                     {
-                        _logger?.LogInformation($"Started adding contacts via Genesys API to contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Started adding contacts via Genesys API to contact list with id: {contactListId}");
+
                         addContactsToGenesysResponse = await _genesysClientService?.AddContactsToContactList(contactsToAddToGenesys, lang, _logger);
-                        _logger?.LogInformation($"Successfully added contacts to contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+
+                        _logger?.LogInformation($"Successfully added contacts to contact list with id: {contactListId}");
 
                         foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToAddToGenesys)
                         {
@@ -134,9 +138,9 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     if (contactsToUpdateAndDialInGenesys.Any())
                     {
-                        _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {contactListId}");
                         updateContactsInGenesysResponse = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdateAndDialInGenesys, lang, _logger);
-                        _logger?.LogInformation($"Successfully updated contacts in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Successfully updated contacts in contact list with id: {contactListId}");
 
                         foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateAndDialInGenesys)
                         {
@@ -151,12 +155,12 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     if (contactsToUpdateOnlyInGenesys.Any())
                     {
-                        _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Started updating contacts via Genesys API in contact list with id: {contactListId}");
                         foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateOnlyInGenesys in contactsToUpdateOnlyInGenesys)
                         {
                             updateContactInGenesysResponse = await _genesysClientService?.UpdateContactInContactList(contactToUpdateOnlyInGenesys, lang, _logger);
                         }
-                        _logger?.LogInformation($"Successfully updated contacts in contact list with id: {Environment.GetEnvironmentVariable("AetnaEnglish")}");
+                        _logger?.LogInformation($"Successfully updated contacts in contact list with id: {contactListId}");
 
                         foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateInGenesys)
                         {
