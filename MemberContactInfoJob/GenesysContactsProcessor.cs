@@ -48,8 +48,6 @@ namespace GenesysContactsProcessJob
         /// <param name="req">Request.<see cref="req"/></param>
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         [FunctionName("AetnaEnglishContactsProcessor")]
-        //[OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
-        //[OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query,,,)]
         public async Task ProcessEnglishContactsAsync([TimerTrigger("0 0 12 * * *")] TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.English);
@@ -61,8 +59,6 @@ namespace GenesysContactsProcessJob
         /// <param name="req">Request.<see cref="req"/></param>
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         [FunctionName("AetnaSpanishContactsProcessor")]
-        //[OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
-        //[OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         public async Task ProcessSpanishContactsAsync([TimerTrigger("0 0 12 * * *")] TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.Spanish);
