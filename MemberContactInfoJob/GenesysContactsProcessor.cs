@@ -3,11 +3,8 @@ using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.TriggerUtilities;
 using GenesysContactsProcessJob.Utilities;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using System;
 using System.Threading.Tasks;
 
@@ -51,8 +48,8 @@ namespace GenesysContactsProcessJob
         /// <param name="req">Request.<see cref="req"/></param>
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         [FunctionName("AetnaEnglishContactsProcessor")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
-        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        //[OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        //[OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         public async Task ProcessEnglishContactsAsync([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.English);
@@ -64,8 +61,8 @@ namespace GenesysContactsProcessJob
         /// <param name="req">Request.<see cref="req"/></param>
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         [FunctionName("AetnaSpanishContactsProcessor")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
-        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        //[OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        //[OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         public async Task ProcessSpanishContactsAsync([TimerTrigger("0 12 * * *", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.Spanish);
