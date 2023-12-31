@@ -63,7 +63,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
 
-                    string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys: AppConfigurations:AetnaSpanish"];
+                    string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
 
                     IEnumerable<GetContactsExportDataFromGenesysResponse> getContactsExportDataFromGenesysResponse = new List<GetContactsExportDataFromGenesysResponse>();
                     if (contactsToProcessInGenesys.Any())
