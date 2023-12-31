@@ -53,7 +53,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public IEnumerable<GetContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, ILogger logger)
+        public IEnumerable<GetContactsResponse> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, string lang, ILogger logger)
         {
             throw new NotImplementedException();
         }
@@ -64,9 +64,9 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExport(ILogger logger)
+        public async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExport(string lang, ILogger logger)
         {
-            return await GetContactsFromContactListExportWithQueryArgs("download=false", logger);
+            return await GetContactsFromContactListExportWithQueryArgs("download=false", lang, logger);
         }
 
         /// <summary>
@@ -75,11 +75,11 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAddToGenesys">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToAddToGenesys, ILogger logger)
+        public async Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToAddToGenesys, string lang, ILogger logger)
         {
             // Gets the request body for the genesys client.
             StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToAddToGenesys, logger);
-            return await AddContactsToContactListWithStringContent(content, logger);
+            return await AddContactsToContactListWithStringContent(content, lang, logger);
         }
 
         /// <summary>
@@ -88,17 +88,17 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToUpdateInGenesys">Contacts To Update.<see cref="ContactsToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys, ILogger logger)
+        public async Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys, string lang, ILogger logger)
         {
             // Gets the request body for the Genesys API request.
             StringContent content = GetAddOrUpdateRequestBodyForGenesys(contactsToUpdateInGenesys, logger);
-            return await UpdateContactsInContactListWithStringContent(content, logger);
+            return await UpdateContactsInContactListWithStringContent(content, lang, logger);
         }
 
-        public async Task<UpdateContactsInGenesysResponse> UpdateContactInContactList(PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys, ILogger logger)
+        public async Task<UpdateContactsInGenesysResponse> UpdateContactInContactList(PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys, string lang, ILogger logger)
         {
             StringContent content = GetUpdateRequestBodyForGenesys(contactToUpdateInGenesys, logger);
-            return await UpdateContactInContactListWithStringContent(contactToUpdateInGenesys.PostDischargeId, content, logger);
+            return await UpdateContactInContactListWithStringContent(contactToUpdateInGenesys.PostDischargeId, content, lang, logger);
         }
 
         /// <summary>
@@ -107,11 +107,11 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToDeleteFromGenesys">Contacts To Delete.<see cref="ContactsToDelete"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToDeleteFromGenesys, ILogger logger)
+        public async Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToDeleteFromGenesys, string lang, ILogger logger)
         {
             // Gets the request query arguments for the Genesys API request.
             string queryArgs = GetDeleteRequestQueryForGenesys(contactsToDeleteFromGenesys, logger);
-            return await DeleteContactsFromContactListWithQueryArgs(queryArgs, logger);
+            return await DeleteContactsFromContactListWithQueryArgs(queryArgs, lang, logger);
         }
 
         #endregion
@@ -138,33 +138,16 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             Uri baseUrl = new(Environment.GetEnvironmentVariable("AccessTokenUrl"));
             Dictionary<string, string> form = new()
             {
-                {"grant_type", _configuration["Genesys:ApiAuth:GrantType"] ?? Environment.GetEnvironmentVariable("GrantType")},
-                {"client_id", _configuration["Genesys:ApiAuth:ClientId"] ?? Environment.GetEnvironmentVariable("ClientId")},
-                {"client_secret", _configuration["Genesys:ApiAuth:ClientSecret"] ?? Environment.GetEnvironmentVariable("ClientSecret")},
+                {"grant_type", _configuration["Genesys:AppConfigurations:GrantType"] ?? Environment.GetEnvironmentVariable("GrantType")},
+                {"client_id", _configuration["Genesys:AppConfigurations:ClientId"] ?? Environment.GetEnvironmentVariable("ClientId")},
+                {"client_secret", _configuration["Genesys:AppConfigurations:ClientSecret"] ?? Environment.GetEnvironmentVariable("ClientSecret")},
             };
-
-            /*string cachedToken = RetrieveCachedToken();
-            if (!string.IsNullOrWhiteSpace(cachedToken))
-                return cachedToken;*/
 
             HttpResponseMessage result = await client.PostAsync(baseUrl, new FormUrlEncodedContent(form));
             _ = result.EnsureSuccessStatusCode();
             string response = await result.Content.ReadAsStringAsync();
             AccessTokenResponse token = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
-            //SetCacheToken(token);
             return token;
-        }
-
-        private void SetCacheToken(AccessTokenResponse accessTokenResponse)
-        {
-            //In a real-world application we should store the token in a cache service and set an TTL.
-            Environment.SetEnvironmentVariable("token", accessTokenResponse.AccessToken);
-        }
-
-        private static string RetrieveCachedToken()
-        {
-            //In a real-world application, we should retrieve the token from a cache service.
-            return Environment.GetEnvironmentVariable("token");
         }
 
         /// <summary>
@@ -268,12 +251,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="queryArgs">Content.<see cref="string"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns thelist of contacts from Genesys.</returns>
-        private async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExportWithQueryArgs(string queryArgs, ILogger logger)
+        private async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExportWithQueryArgs(string queryArgs, string lang, ILogger logger)
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
-            string contactListId = _configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish");
-            string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+            string contactListId = lang == Languages.English ?
+                _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
+            //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
+            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
             Uri requestUri = new($"{baseUrl}/{contactListId}/export?{queryArgs}");
 
             // Make the API request
@@ -309,12 +294,16 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns the list of contacts added to Genesys.</returns>
-        private async Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactListWithStringContent(StringContent content, ILogger logger)
+        private async Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactListWithStringContent(StringContent content, string lang, ILogger logger)
         {
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
-            string contactListId = _configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish");
-            string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+
+            string contactListId = lang == Languages.English ?
+                _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
+            //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
+
+            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
             Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true");
 
             // Make the API request
@@ -342,14 +331,18 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns the updated list of contacts.</returns>
-        private async Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactListWithStringContent(StringContent content, ILogger logger)
+        private async Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactListWithStringContent(StringContent content, string lang, ILogger logger)
         {
             if (content != null)
             {
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
-                string contactListId = _configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish");
-                string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+
+                string contactListId = lang == Languages.English ?
+                _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
+                //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
+
+                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true&clearSystemData=true");
 
                 // Make the API request
@@ -374,11 +367,15 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             else { return new List<UpdateContactsInGenesysResponse>(); }
         }
 
-        private async Task<UpdateContactsInGenesysResponse> UpdateContactInContactListWithStringContent(long id, StringContent content, ILogger logger)
+        private async Task<UpdateContactsInGenesysResponse> UpdateContactInContactListWithStringContent(long id, StringContent content, string lang, ILogger logger)
         {
             // HttpClient
             using HttpClient httpClient = await GetGenesysHttpClient();
-            string contactListId = _configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish");
+
+            string contactListId = lang == Languages.English ?
+                _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
+            //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
+
             string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
             Uri requestUri = new($"{baseUrl}/{contactListId}/contacts/{id}");
 
@@ -407,14 +404,15 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         ///  <param name="content">Content.<see cref="StringContent"/></param>
         /// <param name="logger">Logger.<see cref="Logger"/></param>
         /// <returns>Returns 1 if success.</returns>
-        private async Task<long> DeleteContactsFromContactListWithQueryArgs(string queryArgs, ILogger logger)
+        private async Task<long> DeleteContactsFromContactListWithQueryArgs(string queryArgs, string lang, ILogger logger)
         {
             if (!string.IsNullOrWhiteSpace(queryArgs))
             {
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
-                string contactListId = _configuration["Genesys:ContactLists:AetnaEnglish"] ?? Environment.GetEnvironmentVariable("AetnaEnglish");
-                string baseUrl = _configuration["Genesys:Api:BaseUrl"] ?? Environment.GetEnvironmentVariable("BaseUrl");
+                string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
+                //Environment.GetEnvironmentVariable("AetnaEnglish");
+                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"] ?? Environment.GetEnvironmentVariable("BaseUrl");
                 Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
 
                 // Make the API request
@@ -438,7 +436,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             else { return 0; }
         }
 
-        Task<IEnumerable<GetContactsResponse>> IGenesysClientService.GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, ILogger logger)
+        Task<IEnumerable<GetContactsResponse>> IGenesysClientService.GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, string lang, ILogger logger)
         {
             throw new NotImplementedException();
         }

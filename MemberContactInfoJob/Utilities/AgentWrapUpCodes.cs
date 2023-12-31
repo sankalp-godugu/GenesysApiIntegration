@@ -16,11 +16,4 @@ namespace GenesysContactsProcessJob.Utilities
             "Already SOLD"
         };
     }
-
-    public enum ProcessingType
-    {
-        Add = 0,
-        Update = 1,
-        Remove = 2
-    }
 }
