@@ -138,9 +138,12 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             Uri baseUrl = new(Environment.GetEnvironmentVariable("AccessTokenUrl"));
             Dictionary<string, string> form = new()
             {
-                {"grant_type", _configuration["Genesys:AppConfigurations:GrantType"] ?? Environment.GetEnvironmentVariable("GrantType")},
-                {"client_id", _configuration["Genesys:AppConfigurations:ClientId"] ?? Environment.GetEnvironmentVariable("ClientId")},
-                {"client_secret", _configuration["Genesys:AppConfigurations:ClientSecret"] ?? Environment.GetEnvironmentVariable("ClientSecret")},
+                {"grant_type", _configuration["Genesys:AppConfigurations:GrantType"]},
+                //?? Environment.GetEnvironmentVariable("GrantType")},
+                {"client_id", _configuration["Genesys:AppConfigurations:ClientId"]},
+                //?? Environment.GetEnvironmentVariable("ClientId")},
+                {"client_secret", _configuration["Genesys:AppConfigurations:ClientSecret"]}
+                //?? Environment.GetEnvironmentVariable("ClientSecret")},
             };
 
             HttpResponseMessage result = await client.PostAsync(baseUrl, new FormUrlEncodedContent(form));
