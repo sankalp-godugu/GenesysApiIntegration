@@ -49,7 +49,7 @@ namespace GenesysContactsProcessJob
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         /// TODO: update timer trigger expression after manual testing is complete
         [FunctionName("AetnaEnglishContactsProcessor")]
-        public async Task ProcessEnglishContactsAsync([TimerTrigger("0 30 9 * Jan Mon")] TimerInfo myTimer, ILogger logger)
+        public async Task ProcessEnglishContactsAsync([TimerTrigger("0 30 9 * Jan Mon", RunOnStartup = true)] TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.English);
         }

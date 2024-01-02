@@ -130,12 +130,15 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             AccessTokenResponse tokenResponse = await AuthenticateAsync(httpClient);
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.AccessToken);
 
+            httpClient.BaseAddress = new(_configuration["Genesys:AppConfigurations:AccessTokenUrl"]);
+            //Environment.GetEnvironmentVariable("BaseUrl");
+
             return httpClient;
         }
 
         private async Task<AccessTokenResponse> AuthenticateAsync(HttpClient client)
         {
-            Uri baseUrl = new(_configuration["Genesys:AppConfigurations:AccessTokenUrl"]);
+            string tokenUrl = _configuration["Genesys:AppConfigurations:AccessTokenUrl"];
             //Environment.GetEnvironmentVariable("AccessTokenUrl"));
 
             Dictionary<string, string> form = new()
@@ -148,7 +151,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 //?? Environment.GetEnvironmentVariable("ClientSecret")},
             };
 
-            HttpResponseMessage result = await client.PostAsync(baseUrl, new FormUrlEncodedContent(form));
+            HttpResponseMessage result = await client.PostAsync(tokenUrl, new FormUrlEncodedContent(form));
             _ = result.EnsureSuccessStatusCode();
             string response = await result.Content.ReadAsStringAsync();
             AccessTokenResponse token = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
@@ -261,14 +264,11 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
 
-            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
-            //Environment.GetEnvironmentVariable("BaseUrl");
-
             string contactListId = lang == Languages.English ?
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
             //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-            Uri requestUri = new($"{baseUrl}/{contactListId}/export?{queryArgs}");
+            string requestUri = $"{contactListId}/export?{queryArgs}";
 
             // Make the API request
             HttpResponseMessage response = await httpClient.GetAsync(requestUri);
@@ -308,14 +308,11 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             // Gets the Genesys http client.
             using HttpClient httpClient = await GetGenesysHttpClient();
 
-            string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
-            //Environment.GetEnvironmentVariable("BaseUrl");
-
             string contactListId = lang == Languages.English ?
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
             //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-            Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true");
+            string requestUri = $"{contactListId}/contacts?priority=true";
 
             // Make the API request
             HttpResponseMessage response = await httpClient.PostAsync(requestUri, content);
@@ -349,18 +346,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
 
-                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
-                //Environment.GetEnvironmentVariable("BaseUrl");
-
                 string contactListId = lang == Languages.English ?
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
                 //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-                Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?priority=true&clearSystemData=true");
+                string requestUri = $"{contactListId}/contacts?priority=true&clearSystemData=true";
 
                 // Make the API request
                 HttpResponseMessage response = await httpClient.PostAsync(requestUri, content);
-
 
                 // Check if the request was successful
                 if (response.IsSuccessStatusCode)
@@ -385,14 +378,11 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             // HttpClient
             using HttpClient httpClient = await GetGenesysHttpClient();
 
-            string baseUrl = _configuration["Genesys:Api:BaseUrl"];
-            //Environment.GetEnvironmentVariable("BaseUrl");
-
             string contactListId = lang == Languages.English ?
                 _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
             //Environment.GetEnvironmentVariable("AetnaEnglish") : Environment.GetEnvironmentVariable("AetnaSpanish");
 
-            Uri requestUri = new($"{baseUrl}/{contactListId}/contacts/{id}");
+            string requestUri = $"{contactListId}/contacts/{id}";
 
             // Make the API request
             HttpResponseMessage response = await httpClient.PutAsync(requestUri, content);
@@ -426,13 +416,10 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 // HttpClient
                 using HttpClient httpClient = await GetGenesysHttpClient();
 
-                string baseUrl = _configuration["Genesys:AppConfigurations:BaseURL"];
-                //Environment.GetEnvironmentVariable("BaseUrl");
-
                 string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
                 //Environment.GetEnvironmentVariable("AetnaEnglish");
 
-                Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
+                string requestUri = $"{contactListId}/contacts?contactIds={queryArgs}";
 
                 // Make the API request
                 HttpResponseMessage response = await httpClient.DeleteAsync(requestUri);
