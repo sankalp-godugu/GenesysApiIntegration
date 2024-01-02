@@ -73,10 +73,10 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {contactListId}");
                     }
 
-                    // -------------------------------------- REMOVE CONTACTS TO GENESYS --------------------------------------
+                    // -------------------------------------- REMOVE CONTACTS FROM GENESYS --------------------------------------
 
                     long removeContactsFromGenesysResponse = -1;
-                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToRemoveFromGenesys = contactsToProcessInGenesys.Where(c => c.ShouldRemoveFromContactList);
+                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToRemoveFromGenesys = contactsToProcessInGenesys.Where(c => c.ShouldRemoveFromContactList && !c.IsDeletedFromContactList);
                     IEnumerable<long> contactsWithNoDialWrapUpCode = getContactsExportDataFromGenesysResponse
                     .Where(c => AgentWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)).Select(c => long.Parse(c.Id));
 
@@ -148,7 +148,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         }
                     }
 
-                    // ---------------------------------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS ----------------------------------------------
+                    // ---------------------------------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS -------------------------------------
 
                     UpdateContactsInGenesysResponse updateContactInGenesysResponse = new();
                     IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateOnlyInGenesys = contactsToUpdateInGenesys.Where(c => c.DayCount > 20 && c.DayCount % 2 == 1);
