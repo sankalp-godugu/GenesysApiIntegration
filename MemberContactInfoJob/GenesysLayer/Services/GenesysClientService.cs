@@ -135,7 +135,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
         private async Task<AccessTokenResponse> AuthenticateAsync(HttpClient client)
         {
-            Uri tokenUrl = new(_configuration["Genesys:AppConfigurations:AccessTokenUrl"]);
+            Uri baseUrl = new(_configuration["Genesys:AppConfigurations:AccessTokenUrl"]);
             //Environment.GetEnvironmentVariable("AccessTokenUrl"));
 
             Dictionary<string, string> form = new()
@@ -148,7 +148,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 //?? Environment.GetEnvironmentVariable("ClientSecret")},
             };
 
-            HttpResponseMessage result = await client.PostAsync(tokenUrl, new FormUrlEncodedContent(form));
+            HttpResponseMessage result = await client.PostAsync(baseUrl, new FormUrlEncodedContent(form));
             _ = result.EnsureSuccessStatusCode();
             string response = await result.Content.ReadAsStringAsync();
             AccessTokenResponse token = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
@@ -360,6 +360,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
                 // Make the API request
                 HttpResponseMessage response = await httpClient.PostAsync(requestUri, content);
+
 
                 // Check if the request was successful
                 if (response.IsSuccessStatusCode)
