@@ -36,10 +36,9 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
                     _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Started **********");
 
-                    string appConnectionString = _configuration["DataBase:APPConnectionString"];
-                    //Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
+                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
 
-                    // ---------------------------------- REFRESH CONTACT STATUS TABLE ------------------------------
+                    // ---------------------------------- REFRESH GENESYS CONTACT STATUS TABLE ------------------------------
 
                     _logger?.LogInformation("Started refreshing Genesys Contact Info Reference table");
 
@@ -63,7 +62,9 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
 
-                    string contactListId = lang == Languages.English ? _configuration["Genesys:AppConfigurations:AetnaEnglish"] : _configuration["Genesys:AppConfigurations:AetnaSpanish"];
+                    string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+
+                    string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
 
                     IEnumerable<GetContactsExportDataFromGenesysResponse> getContactsExportDataFromGenesysResponse = new List<GetContactsExportDataFromGenesysResponse>();
                     if (contactsToProcessInGenesys.Any())
@@ -73,7 +74,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {contactListId}");
                     }
 
-                    // -------------------------------------- REMOVE CONTACTS FROM GENESYS --------------------------------------
+                    // --------------------------------- REMOVE CONTACTS FROM GENESYS ------------------------------------
 
                     long removeContactsFromGenesysResponse = -1;
                     IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToRemoveFromGenesys = contactsToProcessInGenesys.Where(c => c.ShouldRemoveFromContactList && !c.IsDeletedFromContactList);
@@ -126,7 +127,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _ = contactsToUpdateInGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId));
 
                     // do not reset AttemptCountTotal on update - keep the value as is in Genesys
-                    if (contactsToUpdateInGenesys.Count() > 0)
+                    if (contactsToUpdateInGenesys.Count > 0)
                     {
                         foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys in contactsToUpdateInGenesys)
                         {

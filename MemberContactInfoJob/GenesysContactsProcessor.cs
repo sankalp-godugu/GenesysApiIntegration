@@ -2,7 +2,9 @@ using GenesysContactsProcessJob.DataLayer.Interfaces;
 using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.TriggerUtilities;
 using GenesysContactsProcessJob.Utilities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -49,7 +51,7 @@ namespace GenesysContactsProcessJob
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         /// TODO: update timer trigger expression after manual testing is complete
         [FunctionName("AetnaEnglishContactsProcessor")]
-        public async Task ProcessEnglishContactsAsync([TimerTrigger("0 30 9 * Jan Mon")] TimerInfo myTimer, ILogger logger)
+        public async Task ProcessEnglishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.English);
         }
@@ -61,7 +63,7 @@ namespace GenesysContactsProcessJob
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         /// TODO: update timer trigger expression after manual testing is complete
         [FunctionName("AetnaSpanishContactsProcessor")]
-        public async Task ProcessSpanishContactsAsync([TimerTrigger("0 30 9 * Jan Mon")] TimerInfo myTimer, ILogger logger)
+        public async Task ProcessSpanishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, TimerInfo myTimer, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.Spanish);
         }
