@@ -51,7 +51,7 @@ namespace GenesysContactsProcessJob
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         /// TODO: update timer trigger expression after manual testing is complete
         [FunctionName("AetnaEnglishContactsProcessor")]
-        public async Task ProcessEnglishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, TimerInfo myTimer, ILogger logger)
+        public async Task ProcessEnglishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.English);
         }
@@ -63,7 +63,7 @@ namespace GenesysContactsProcessJob
         /// <param name="_logger">Logger.<see cref="ILogger"/></param>
         /// TODO: update timer trigger expression after manual testing is complete
         [FunctionName("AetnaSpanishContactsProcessor")]
-        public async Task ProcessSpanishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, TimerInfo myTimer, ILogger logger)
+        public async Task ProcessSpanishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, ILogger logger)
         {
             _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.Spanish);
         }
