@@ -36,17 +36,15 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
                     _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Started **********");
 
-                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("ConnectionStrings:Test2Conn");
+                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("DataBase:ConnectionStringTEST2");
 
                     // ---------------------------------- REFRESH GENESYS CONTACT STATUS TABLE ------------------------------
 
                     _logger?.LogInformation("Started refreshing Genesys Contact Info Reference table");
-
                     IEnumerable<string> refreshGenesysContactInfoResponse = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysContactInfo, new(), appConnectionString, _logger);
-
                     _logger?.LogInformation($"Ended refreshing Genesys Contact Info Reference table with result: {refreshGenesysContactInfoResponse}");
 
-                    // ----------------------------------- GET MEMBERS BY LANG -----------------------------------------
+                    // ----------------------------------- GET MEMBERS BY LANGUAGE -----------------------------------------
 
                     // SQL parameters.
                     Dictionary<string, object> sqlParams = new()
@@ -55,9 +53,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     };
 
                     _logger?.LogInformation("Started fetching PD orders for all members");
-
                     IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToProcessInGenesys = await _dataLayer.ExecuteReader<PostDischargeInfo_GenesysContactInfo>(SQLConstants.GetPDAndGenesysInfo, sqlParams, appConnectionString, _logger);
-
                     _logger?.LogInformation($"Ended fetching PD orders with count: {contactsToProcessInGenesys?.Count()}");
 
                     // ------------------------------------- GET CONTACTS FROM GENESYS -------------------------------------
@@ -67,12 +63,9 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
 
                     IEnumerable<GetContactsExportDataFromGenesysResponse> getContactsExportDataFromGenesysResponse = new List<GetContactsExportDataFromGenesysResponse>();
-                    if (contactsToProcessInGenesys.Any())
-                    {
-                        _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {contactListId}");
-                        getContactsExportDataFromGenesysResponse = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
-                        _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {contactListId}");
-                    }
+                    _logger?.LogInformation($"Started fetching contacts via Genesys API for the contact list id: {contactListId}");
+                    getContactsExportDataFromGenesysResponse = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
+                    _logger?.LogInformation($"Successfully fetched contacts for the contact list id: {contactListId}");
 
                     // --------------------------------- REMOVE CONTACTS FROM GENESYS ------------------------------------
 
@@ -149,7 +142,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         }
                     }
 
-                    // ---------------------------------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS -------------------------------------
+                    // -------------------------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS -------------------------------------
 
                     UpdateContactsInGenesysResponse updateContactInGenesysResponse = new();
                     IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateOnlyInGenesys = contactsToUpdateInGenesys.Where(c => c.DayCount > 20 && c.DayCount % 2 == 1);

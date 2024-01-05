@@ -2,10 +2,10 @@
 {
     public class ConfigConstants
     {
-        public static string GrantTypeKey => "Genesys:AppConfigurations:GrantType";
         public static string TokenUrlKey => "Genesys:AppConfigurations:AccessTokenUrl";
-        public static string ClientSecretKey => "Genesys:AppConfigurations:ClientSecret";
+        public static string GrantTypeKey => "Genesys:AppConfigurations:GrantType";
         public static string ClientIdKey => "Genesys:AppConfigurations:ClientId";
+        public static string ClientSecretKey => "Genesys:AppConfigurations:ClientSecret";
         public static string BaseUrlKey => "Genesys:AppConfigurations:BaseUrl";
         public static string ContactListIdAetnaEnglishKey => "Genesys:AppConfigurations:AetnaEnglish";
         public static string ContactListIdAetnaSpanishKey => "Genesys:AppConfigurations:AetnaSpanish";
