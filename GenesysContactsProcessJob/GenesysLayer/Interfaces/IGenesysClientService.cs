@@ -12,6 +12,13 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
     public interface IGenesysClientService
     {
         /// <summary>
+        /// Initiate contact list export in Genesys asychronously.
+        /// </summary>
+        /// <param name="logger">Logger.<see cref="ILogger"/></param>
+        /// <returns>Returns the list of contacts from Genesys.</returns>
+        public Task<InitiateContactListExportResponse> InitiateContactListExport(string lang, ILogger logger);
+
+        /// <summary>
         /// Get list of contacts from Genesys asychronously.
         /// </summary>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
@@ -55,6 +62,6 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// <param name="contactsToRemoveFromGenesys">Contacts To Delete.<see cref="ContactsToDelete"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns a 200 response on successful deletion in Genesys.</returns>
-        public Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToRemoveFromGenesys, string lang, ILogger logger);
+        public Task<long> DeleteContactsFromContactList(IEnumerable<string> contactsToRemoveFromGenesys, string lang, ILogger logger);
     }
 }

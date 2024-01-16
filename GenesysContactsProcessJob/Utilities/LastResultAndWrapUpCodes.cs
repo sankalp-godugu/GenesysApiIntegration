@@ -2,7 +2,7 @@
 
 namespace GenesysContactsProcessJob.Utilities
 {
-    public class AgentWrapUpCodes
+    public class LastResultAndWrapUpCodes
     {
         public static readonly List<string> WrapUpCodesForDeletion = new()
         {
@@ -13,7 +13,10 @@ namespace GenesysContactsProcessJob.Utilities
             "Not Interested",
             "SOLD",
             "Wrong Number",
-            "Already SOLD"
+            "Already SOLD",
+            "Inquiry",
+            "ININ-OUTBOUND-DNC-SKIPPED",
+            "ININ-OUTBOUND-ON-DO-NOT-CALL-LIST"
         };
     }
 }

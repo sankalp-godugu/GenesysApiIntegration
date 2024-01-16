@@ -50,6 +50,14 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         #region Public Methods
 
         /// <summary>
+        /// Initiate the export for Genesys contact list async
+        /// </summary>
+        public async Task<InitiateContactListExportResponse> InitiateContactListExport(string lang, ILogger logger)
+        {
+            return await InitiateContactListExportAsync(lang, logger);
+        }
+
+        /// <summary>
         /// Gets the contacts in Genesys asychronously.
         /// </summary>
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
@@ -109,11 +117,18 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToDeleteFromGenesys">Contacts To Delete.<see cref="ContactsToDelete"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<long> DeleteContactsFromContactList(IEnumerable<long> contactsToDeleteFromGenesys, string lang, ILogger logger)
+        public async Task<long> DeleteContactsFromContactList(IEnumerable<string> contactsToDeleteFromGenesys, string lang, ILogger logger)
         {
             // Gets the request query arguments for the Genesys API request.
-            string queryArgs = GetDeleteRequestQueryForGenesys(contactsToDeleteFromGenesys, logger);
-            return await DeleteContactsFromContactListWithQueryArgs(queryArgs, lang, logger);
+            List<string> contactsToRemove = contactsToDeleteFromGenesys.ToList();
+            while (contactsToRemove.Count > 0)
+            {
+                int max = contactsToRemove.Count < 100 ? contactsToRemove.Count : 100;
+                string queryArgs = GetDeleteRequestQueryForGenesys(contactsToRemove.GetRange(0, max), logger);
+                contactsToRemove.RemoveRange(0, max);
+                _ = await DeleteContactsFromContactListWithQueryArgs(queryArgs, lang, logger);
+            }
+            return 1;
         }
 
         #endregion
@@ -230,12 +245,12 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// </summary>
         /// <param name="contactsToDeleteFromGenesys">Contacts to Process.<see cref="ContactsToDelete"/></param>
         /// <returns>Returns the string content.</returns>
-        private string GetDeleteRequestQueryForGenesys(IEnumerable<long> contactsToDeleteFromGenesys, ILogger logger)
+        private string GetDeleteRequestQueryForGenesys(IEnumerable<string> contactsToDeleteFromGenesys, ILogger logger)
         {
             try
             {
                 string contactIds = "";
-                foreach (long contact in contactsToDeleteFromGenesys)
+                foreach (string contact in contactsToDeleteFromGenesys)
                 {
                     contactIds += $"{contact},";
                 }
@@ -245,6 +260,40 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             {
                 logger.LogError($"Failed in processing the query string arguments for Genesys with exception message: {ex.Message}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Initiates contact list export
+        /// </summary>
+        ///  <param name="content">Content.<see cref="StringContent"/></param>
+        /// <param name="logger">Logger.<see cref="Logger"/></param>
+        /// <returns>Returns 1 if success.</returns>
+        private async Task<InitiateContactListExportResponse> InitiateContactListExportAsync(string lang, ILogger logger)
+        {
+            // HttpClient
+            using HttpClient httpClient = await GetGenesysHttpClient();
+            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+            string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
+            string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
+            Uri requestUri = new($"{baseUrl}/{contactListId}/export");
+
+            // Make the API request
+            HttpResponseMessage response = await httpClient.PostAsync(requestUri, null);
+
+            // Check if the request was successful
+            if (response.IsSuccessStatusCode)
+            {
+                // Read and deserialize the response content
+                string responseContent = await response?.Content?.ReadAsStringAsync();
+
+                // Return
+                return JsonConvert.DeserializeObject<InitiateContactListExportResponse>(responseContent);
+            }
+            else
+            {
+                logger.LogError($"Error in Initiate Contact List Export API endpoint with response: {response}");
+                return new InitiateContactListExportResponse();
             }
         }
 
@@ -288,6 +337,44 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 logger.LogError($"Error in Get Contacts API endpoint with response: {response}");
                 return new List<GetContactsExportDataFromGenesysResponse>();
             }
+        }
+
+        /// <summary>
+        /// Deletes list of contacts with string content.
+        /// </summary>
+        ///  <param name="content">Content.<see cref="StringContent"/></param>
+        /// <param name="logger">Logger.<see cref="Logger"/></param>
+        /// <returns>Returns 1 if success.</returns>
+        private async Task<long> DeleteContactsFromContactListWithQueryArgs(string queryArgs, string lang, ILogger logger)
+        {
+            if (!string.IsNullOrWhiteSpace(queryArgs))
+            {
+                // HttpClient
+                using HttpClient httpClient = await GetGenesysHttpClient();
+                string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+                string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
+                string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
+                Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
+
+                // Make the API request
+                HttpResponseMessage response = await httpClient.DeleteAsync(requestUri);
+
+                // Check if the request was successful
+                if (response.IsSuccessStatusCode)
+                {
+                    // Read and deserialize the response content
+                    string responseContent = await response?.Content?.ReadAsStringAsync();
+
+                    // Return
+                    return 1;
+                }
+                else
+                {
+                    logger.LogError($"Error in Remove Contacts API endpoint with response: {response}");
+                    return 0;
+                }
+            }
+            else { return 0; }
         }
 
         /// <summary>
@@ -389,44 +476,6 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 logger.LogError($"Error in Update Contacts API endpoint with response: {response}");
                 return new UpdateContactsInGenesysResponse();
             }
-        }
-
-        /// <summary>
-        /// Deletes list of contacts with string content.
-        /// </summary>
-        ///  <param name="content">Content.<see cref="StringContent"/></param>
-        /// <param name="logger">Logger.<see cref="Logger"/></param>
-        /// <returns>Returns 1 if success.</returns>
-        private async Task<long> DeleteContactsFromContactListWithQueryArgs(string queryArgs, string lang, ILogger logger)
-        {
-            if (!string.IsNullOrWhiteSpace(queryArgs))
-            {
-                // HttpClient
-                using HttpClient httpClient = await GetGenesysHttpClient();
-                string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
-                string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
-                string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
-                Uri requestUri = new($"{baseUrl}/{contactListId}/contacts?contactIds={queryArgs}");
-
-                // Make the API request
-                HttpResponseMessage response = await httpClient.DeleteAsync(requestUri);
-
-                // Check if the request was successful
-                if (response.IsSuccessStatusCode)
-                {
-                    // Read and deserialize the response content
-                    string responseContent = await response?.Content?.ReadAsStringAsync();
-
-                    // Return
-                    return 1;
-                }
-                else
-                {
-                    logger.LogError($"Error in Remove Contacts API endpoint with response: {response}");
-                    return 0;
-                }
-            }
-            else { return 0; }
         }
 
         Task<IEnumerable<GetContactsResponse>> IGenesysClientService.GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, string lang, ILogger logger)

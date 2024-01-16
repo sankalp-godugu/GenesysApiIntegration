@@ -16,7 +16,7 @@ namespace GenesysContactsProcessJob.Utilities
                 _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, AddContactsRequest>()
                     .ForMember(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForMember(acr => acr.ContactListId, opt => opt.MapFrom(src => src.Language == Languages.English ?
-                configuration["Genesys:AppConfigurations:AetnaEnglish"] : configuration["Genesys:AppConfigurations:AetnaSpanish"]))
+                configuration["Genesys:AppConfigurations:ContactListId:AetnaEnglish"] : configuration["Genesys:AppConfigurations:ContactListId:AetnaSpanish"]))
                     .ForPath(acr => acr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(acr => acr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
                     .ForPath(acr => acr.Data.Language, opt => opt.MapFrom(src => src.Language))
@@ -38,7 +38,7 @@ namespace GenesysContactsProcessJob.Utilities
                 _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, UpdateContactsRequest>()
                     .ForMember(ucr => ucr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForMember(ucr => ucr.ContactListId, opt => opt.MapFrom(src => src.Language == Languages.English ?
-                configuration["Genesys:AppConfigurations:AetnaEnglish"] : configuration["Genesys:AppConfigurations:AetnaSpanish"]))
+                configuration["Genesys:AppConfigurations:ContactListId:AetnaEnglish"] : configuration["Genesys:AppConfigurations:ContactListId:AetnaSpanish"]))
                     .ForPath(ucr => ucr.Data.NhMemberId, opt => opt.MapFrom(src => src.NHMemberId))
                     .ForPath(ucr => ucr.Data.MemberName, opt => opt.MapFrom(src => src.MemberName))
                     .ForPath(ucr => ucr.Data.Language, opt => opt.MapFrom(src => src.Language))
