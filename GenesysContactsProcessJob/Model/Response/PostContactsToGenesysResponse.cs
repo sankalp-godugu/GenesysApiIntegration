@@ -1,18 +1,17 @@
 ﻿using GenesysContactsProcessJob.Model.Common;
-using System;
 
 namespace GenesysContactsProcessJob.Model.Response
 {
-    public class UpdateContactsInGenesysResponse
+    public class PostContactsToGenesysResponse
     {
         public string Id { get; set; }
         public string ContactListId { get; set; }
         public Data Data { get; set; }
-        public CallRecords CallRecords { get; set; }
-        public bool Callable { get; set; }
+        public bool Callable => true;
         public PhoneNumberStatus PhoneNumberStatus { get; set; }
         public ContactableStatus ContactableStatus { get; set; }
-        public DateTime DateCreated { get; set; }
+        public ConfigurationOverrides ConfigurationOverrides { get; set; }
+        public string DateCreated { get; set; }
         public string SelfUri { get; set; }
     }
 }

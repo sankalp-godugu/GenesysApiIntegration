@@ -13,7 +13,7 @@ namespace GenesysContactsProcessJob.Utilities
             MapperConfiguration config = new(cfg =>
             {
                 //Configuring PostDischargeInfo to AddContactsRequest
-                _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, AddContactsRequest>()
+                _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, PostContactsRequest>()
                     .ForMember(acr => acr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForMember(acr => acr.ContactListId, opt => opt.MapFrom(src => src.Language == Languages.English ?
                 configuration["Genesys:AppConfigurations:ContactListId:AetnaEnglish"] : configuration["Genesys:AppConfigurations:ContactListId:AetnaSpanish"]))
@@ -35,7 +35,7 @@ namespace GenesysContactsProcessJob.Utilities
                     });
 
                 // UpdateContactsRequest
-                _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, UpdateContactsRequest>()
+                _ = cfg.CreateMap<PostDischargeInfo_GenesysContactInfo, PostContactsRequest>()
                     .ForMember(ucr => ucr.Id, opt => opt.MapFrom(src => src.PostDischargeId))
                     .ForMember(ucr => ucr.ContactListId, opt => opt.MapFrom(src => src.Language == Languages.English ?
                 configuration["Genesys:AppConfigurations:ContactListId:AetnaEnglish"] : configuration["Genesys:AppConfigurations:ContactListId:AetnaSpanish"]))

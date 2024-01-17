@@ -1,4 +1,4 @@
-﻿using GenesysContactsProcessJob.Model.DTO;
+﻿using GenesysContactsProcessJob.Model.Request;
 using GenesysContactsProcessJob.Model.Response;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
@@ -11,6 +11,8 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
     /// </summary>
     public interface IGenesysClientService
     {
+        public Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetListFromCsv(string filePath);
+
         /// <summary>
         /// Initiate contact list export in Genesys asychronously.
         /// </summary>
@@ -23,7 +25,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// </summary>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of contacts from Genesys.</returns>
-        public Task<IEnumerable<GetContactsResponse>> GetContactsFromContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToGetFromGenesys, string lang, ILogger logger);
+        public Task<IEnumerable<GetContactsResponse>> GetContactsFromContactList(IEnumerable<GetContactsRequest> contactsToGetFromGenesys, string lang, ILogger logger);
 
         /// <summary>
         /// Get list of contacts from export from Genesys asychronously.
@@ -38,7 +40,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// <param name="contactsToAddToGenesys">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of added contacts in Genesys.</returns>
-        public Task<IEnumerable<AddContactsToGenesysResponse>> AddContactsToContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToAddToGenesys, string lang, ILogger logger);
+        public Task<IEnumerable<PostContactsToGenesysResponse>> AddContactsToContactList(IEnumerable<PostContactsRequest> contactsToAddToGenesys, string lang, ILogger logger);
 
         /// <summary>
         /// Updates list of contacts in Genesys.
@@ -46,7 +48,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// <param name="contactsToUpdateInGenesys">Contacts To Update.<see cref="ContactsToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of updated contacts in Genesys.</returns>
-        public Task<IEnumerable<UpdateContactsInGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys, string lang, ILogger logger);
+        public Task<IEnumerable<PostContactsToGenesysResponse>> UpdateContactsInContactList(IEnumerable<PostContactsRequest> contactsToUpdateInGenesys, string lang, ILogger logger);
 
         /// <summary>
         /// Updates list of contacts in Genesys.
@@ -54,7 +56,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// <param name="contactToUpdateInGenesys">Contacts To Update.<see cref="ContactToUpdate"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of updated contacts in Genesys.</returns>
-        public Task<UpdateContactsInGenesysResponse> UpdateContactInContactList(PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys, string lang, ILogger logger);
+        public Task<PostContactsToGenesysResponse> UpdateContactInContactList(PostContactsRequest contactToUpdateInGenesys, string lang, ILogger logger);
 
         /// <summary>
         /// Deletes list of contacts in Genesys asychronously.

@@ -1,4 +1,5 @@
-﻿using GenesysContactsProcessJob.DataLayer.Interfaces;
+﻿using CsvHelper;
+using GenesysContactsProcessJob.DataLayer.Interfaces;
 using GenesysContactsProcessJob.GenesysLayer.Interfaces;
 using GenesysContactsProcessJob.Model.DTO;
 using GenesysContactsProcessJob.Model.Response;
@@ -8,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -33,143 +36,166 @@ namespace GenesysContactsProcessJob.TriggerUtilities
             {
                 await Task.Run(async () =>
                 {
+                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("DataBase:ConnectionStringPROD");
+
+                    // BEGIN TESTING --------------------------------------------------
+
+                    //// 1) read original list
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> listFromDialer = await _genesysClientService?.GetListFromCsv(@"C:\Temp\ListFromDialer.csv");
+
+                    //// 2) compare filtered and original list, removing duplicates from original list ONLY
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> listFromDialerNoDuplicates = listFromDialer
+                    //    .GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
+                    //    .Select(c2 => c2.First());
+
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> temp = listFromDialer
+                    //.GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
+                    //.SelectMany(c2 => c2);
+
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> temp2 = listFromDialer
+                    //.GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
+                    //.Where(g => g.Count() > 1)
+                    //.SelectMany(c2 => c2);
+
+                    //List<GetContactsExportDataFromGenesysResponse> duplicates = listFromDialer.Except(listFromDialerNoDuplicates).Where(c => c.Data.NhMemberId != "0").ToList();
+
+                    //using (StreamWriter writer = new(@"C:\Temp\DuplicatesToRemove.csv", false, System.Text.Encoding.UTF8))
+                    //using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
+                    //{
+                    //    csv.WriteRecords(duplicates); // where values implements IEnumerable
+                    //}
+
+                    //List<string> duplicatesToDelete = duplicates.Select(c => c.Id.ToString()).ToList();
+
+                    //long result = await _genesysClientService?.DeleteContactsFromContactList(duplicatesToDelete, lang, _logger);
+
+                    // END TESTING ----------------------------------------------------------
+
                     _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
                     _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Started **********");
-
-                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("DataBase:ConnectionStringTEST2");
 
                     string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
 
                     string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
 
-                    // ------------------ 8pm: INITIATE EXPORT OF CONTACT LIST ----------------------
+                    // ------------------ 6pm: INITIATE EXPORT OF CONTACT LIST ----------------------
 
                     _logger?.LogInformation($"Started initiating contact list export via Genesys API for contact list with id:{contactListId}");
-                    InitiateContactListExportResponse initiateContactListExportResponse = await _genesysClientService?.InitiateContactListExport(lang, _logger);
+                    //InitiateContactListExportResponse initiateContactListExportResponse = await _genesysClientService?.InitiateContactListExport(lang, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
+                    await Task.Delay(5000);
 
                     // ----------------- GET CONTACTS FROM GENESYS -------------------
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> getContactsExportDataFromGenesysResponse = new List<GetContactsExportDataFromGenesysResponse>();
-                    await Task.Delay(5000);
                     _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
-                    getContactsExportDataFromGenesysResponse = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToProcess = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
 
-                    // ------------------- GET MEMBERS BY LANGUAGE ------------------
+                    // ---------------- REMOVE CONTACTS FROM GENESYS ------------------
 
-                    // SQL parameters.
-                    Dictionary<string, object> sqlParams = new()
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithoutDupes = contactsToProcess.ToList()
+                    .GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
+                    .Select(c2 => c2.First());
+
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsDupes = contactsToProcess.Except(contactsWithoutDupes);
+
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithDNCCodes = contactsToProcess.ToList()
+                    .Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)
+                                || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.PhoneNumberStatus.PhoneNumber.LastResult)
+                                || int.Parse(c.Data.DayCount) > 50
+                                || int.Parse(c.Data.AttemptCountTotal) > 45);
+
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodes.Union(contactsDupes);
+
+                    //TODO: remove later
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsMaxDayCountOrAttemptCountTotal = contactsToRemove
+                    .Where(c => int.Parse(c.Data.DayCount) > 50 || int.Parse(c.Data.AttemptCountTotal) > 45);
+
+                    // write duplicates to be scrubbed to file
+                    using (StreamWriter writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Duplicates.csv", false, System.Text.Encoding.UTF8))
+                    using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
                     {
-                        { "@lang", lang },
-                    };
-
-                    _logger?.LogInformation("Started fetching PD orders for all members");
-                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToProcessInGenesys = await _dataLayer.ExecuteReader<PostDischargeInfo_GenesysContactInfo>(SQLConstants.GetPDAndGenesysInfo, sqlParams, appConnectionString, _logger);
-                    _logger?.LogInformation($"Ended fetching PD orders with count: {contactsToProcessInGenesys?.Count()}");
-
-                    // ---------------- REMOVE CONTACTS FROM GENESYS according to DNC ------------------
-
-                    long removeContactsFromGenesysResponse = -1;
-                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToRemoveFromGenesys = contactsToProcessInGenesys.Where(c => c.ShouldRemoveFromContactList && !c.IsDeletedFromContactList);
-                    IEnumerable<string> contactsWithNoDialWrapUpCode = getContactsExportDataFromGenesysResponse
-                    .Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode) || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.PhoneNumberStatus.PhoneNumber.LastResult)).Select(c => c.Id);
-
-                    List<string> allContactsToRemoveFromGenesys = contactsToRemoveFromGenesys.Select(c => c.PostDischargeId.ToString()).ToList();
-                    allContactsToRemoveFromGenesys.AddRange(contactsWithNoDialWrapUpCode.Where(c2 => allContactsToRemoveFromGenesys.All(c1 => c1 != c2)));
-
-                    if (allContactsToRemoveFromGenesys.Any())
-                    {
-                        _logger?.LogInformation($"Started removing contacts via Genesys API from contact list with id: {contactListId}");
-
-                        removeContactsFromGenesysResponse = await _genesysClientService?.DeleteContactsFromContactList(allContactsToRemoveFromGenesys, lang, _logger);
-
-                        _logger?.LogInformation($"Finished removing contacts via Genesys API from contact list with id: {contactListId}");
-
-                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToRemoveFromGenesys)
-                        {
-                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "REMOVED", 2, _dataLayer);
-                        }
+                        csv.WriteRecords(contactsDupes);
                     }
 
-                    // --------------------- ADD CONTACTS TO GENESYS ---------------------
-
-                    // if contact already in contact list with same discharge date and/or disposition code of not interested - DO NOT ADD
-                    IEnumerable<AddContactsToGenesysResponse> addContactsToGenesysResponse = new List<AddContactsToGenesysResponse>();
-                    List<PostDischargeInfo_GenesysContactInfo> contactsToAddToGenesys = contactsToProcessInGenesys.Where(c => c.ShouldAddToContactList && !c.IsDeletedFromContactList).ToList();
-                    _ = contactsToAddToGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId.ToString()));
-                    if (contactsToAddToGenesys.Any())
+                    // write DNC records to be scrubbed to file
+                    using (StreamWriter writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_DNC.csv", false, System.Text.Encoding.UTF8))
+                    using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
                     {
-                        _logger?.LogInformation($"Started adding contacts via Genesys API to contact list with id: {contactListId}");
-
-                        addContactsToGenesysResponse = await _genesysClientService?.AddContactsToContactList(contactsToAddToGenesys, lang, _logger);
-
-                        _logger?.LogInformation($"Finished adding contacts via Genesys API to contact list with id: {contactListId}");
-
-                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToAddToGenesys)
-                        {
-                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "ADDED", 2, _dataLayer);
-                        }
+                        csv.WriteRecords(contactsWithDNCCodes);
                     }
 
-                    // -------------------- UPDATE CONTACTS TO BE DIALED IN GENESYS ----------------------
+                    Environment.Exit(Environment.ExitCode);
+                    //if (contactsToRemove.Any())
+                    //{
+                    //    _logger?.LogInformation($"Started removing contacts from contact list with id: {contactListId}");
+                    //    IEnumerable<string> contactIds = contactsToRemove.Select(c => c.Id);
+                    //    removeContactsFromGenesysResponse = await _genesysClientService?.DeleteContactsFromContactList(contactIds, lang, _logger);
+                    //    _logger?.LogInformation($"Finished removing contacts from contact list with id: {contactListId}");
+                    //}
+                    //else
+                    //{
+                    //    _logger?.LogInformation($"No contacts to remove from contact list with id: {contactListId}");
+                    //}
+                    //contactsToProcess = contactsToProcess.Except(contactsToRemove);
 
-                    IEnumerable<UpdateContactsInGenesysResponse> updateContactsInGenesysResponse = new List<UpdateContactsInGenesysResponse>();
-                    // if contact already in contact list with same discharge date and/or disposition code of not interested -- update this value from code)
-                    List<PostDischargeInfo_GenesysContactInfo> contactsToUpdateInGenesys = contactsToProcessInGenesys.Where(c => c.ShouldUpdateInContactList && !c.IsDeletedFromContactList).ToList();
-                    // don't update contacts that have been removed from contact list
-                    _ = contactsToUpdateInGenesys.RemoveAll(c2 => allContactsToRemoveFromGenesys.Exists(c => c == c2.PostDischargeId.ToString()));
+                    //// ------------------- GET MEMBERS BY LANGUAGE ------------------
 
-                    // do not reset AttemptCountTotal on update - keep the value as is in Genesys
-                    if (contactsToUpdateInGenesys.Count > 0)
-                    {
-                        foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateInGenesys in contactsToUpdateInGenesys)
-                        {
-                            contactToUpdateInGenesys.AttemptCountTotal = int.Parse(getContactsExportDataFromGenesysResponse.FirstOrDefault(c => contactToUpdateInGenesys.PostDischargeId == long.Parse(c.Id)).Data.AttemptCountTotal);
-                        }
-                    }
+                    //Dictionary<string, object> sqlParams = new()
+                    //{
+                    //    { "@lang", lang },
+                    //};
 
-                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateAndDialInGenesys = contactsToUpdateInGenesys.Where(c => c.DayCount <= 20 || c.DayCount % 2 == 0);
+                    //_logger?.LogInformation("Started fetching PD orders for all members");
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> newContactsToProcess = await _dataLayer.ExecuteReader<GetContactsExportDataFromGenesysResponse>(SQLConstants.GetPDAndGenesysInfo, sqlParams, appConnectionString, _logger);
+                    //_logger?.LogInformation($"Ended fetching PD orders with count: {contactsToProcess?.Count()}");
 
-                    if (contactsToUpdateAndDialInGenesys.Any())
-                    {
-                        _logger?.LogInformation($"Started updating contacts TO be dialed via Genesys API in contact list with id: {contactListId}");
-                        updateContactsInGenesysResponse = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdateAndDialInGenesys, lang, _logger);
-                        _logger?.LogInformation($"Finished updating contacts TO be dialed via Genesys API in contact list with id: {contactListId}");
+                    //// --------------------- ADD CONTACTS TO GENESYS ---------------------
 
-                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateAndDialInGenesys)
-                        {
-                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "UPDATED", 2, _dataLayer);
-                        }
-                    }
+                    //IEnumerable<PostContactsToGenesysResponse> contactsAdded = new List<PostContactsToGenesysResponse>();
+                    //List<PostContactsRequest> contactsToAdd = new();
 
-                    // ----------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS -------------------
+                    //if (contactsToAdd.Any())
+                    //{
+                    //    _logger?.LogInformation($"Started adding contacts via Genesys API to contact list with id: {contactListId}");
+                    //    contactsAdded = await _genesysClientService?.AddContactsToContactList(contactsToAdd, lang, _logger);
+                    //    _logger?.LogInformation($"Finished adding contacts via Genesys API to contact list with id: {contactListId}");
+                    //}
+                    //newContactsToProcess = newContactsToProcess.Where(c => !contactsAdded.Any(c2 => c2.Id == c.Id));
 
-                    UpdateContactsInGenesysResponse updateContactInGenesysResponse = new();
-                    IEnumerable<PostDischargeInfo_GenesysContactInfo> contactsToUpdateOnlyInGenesys = contactsToUpdateInGenesys.Where(c => c.DayCount > 20 && c.DayCount % 2 == 1);
+                    //// -------------------- UPDATE CONTACTS TO BE DIALED IN GENESYS ----------------------
 
-                    if (contactsToUpdateOnlyInGenesys.Any())
-                    {
-                        _logger?.LogInformation($"Started updating contacts NOT to be dialed via Genesys API in contact list with id: {contactListId}");
-                        foreach (PostDischargeInfo_GenesysContactInfo contactToUpdateOnlyInGenesys in contactsToUpdateOnlyInGenesys)
-                        {
-                            updateContactInGenesysResponse = await _genesysClientService?.UpdateContactInContactList(contactToUpdateOnlyInGenesys, lang, _logger);
-                        }
-                        _logger?.LogInformation($"Finished updating contacts NOT to be dialed via Genesys API in contact list with id: {contactListId}");
+                    //IEnumerable<PostContactsToGenesysResponse> contactsUpdatedAndDialed = new List<PostContactsToGenesysResponse>();
+                    //List<PostContactsRequest> contactsToUpdateAndDial = new();
+                    //if (contactsToUpdateAndDial.Any())
+                    //{
+                    //    _logger?.LogInformation($"Started updating contacts TO be dialed via Genesys API in contact list with id: {contactListId}");
+                    //    contactsUpdatedAndDialed = await _genesysClientService?.UpdateContactsInContactList(contactsToUpdateAndDial, lang, _logger);
+                    //    _logger?.LogInformation($"Finished updating contacts TO be dialed via Genesys API in contact list with id: {contactListId}");
+                    //}
+                    //newContactsToProcess = newContactsToProcess.Where(c => !contactsUpdatedAndDialed.Any(c2 => c2.Id == c.Id));
 
-                        foreach (PostDischargeInfo_GenesysContactInfo contact in contactsToUpdateInGenesys)
-                        {
-                            await UpdateGenesysContactStatus(_logger, appConnectionString, contact, Convert.ToInt64(contact?.PostDischargeId), "UPDATED", 2, _dataLayer);
-                        }
-                    }
+                    //// --------------------- UPDATE CONTACTS NOT TO BE DIALED IN GENESYS -------------------
 
-                    // --------------- REFRESH GENESYS CONTACT STATUS TABLE -------------------
+                    //IEnumerable<PostContactsRequest> contactsToUpdateOnly = (IEnumerable<PostContactsRequest>)newContactsToProcess.Where(c => int.Parse(c.Data.DayCount) > 20 && int.Parse(c.Data.DayCount) % 2 == 1);
 
-                    _logger?.LogInformation("Started refreshing Genesys Contact Info Reference table");
-                    IEnumerable<string> refreshGenesysContactInfoResponse = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysContactInfo, new(), appConnectionString, _logger);
-                    _logger?.LogInformation($"Ended refreshing Genesys Contact Info Reference table with result: {refreshGenesysContactInfoResponse}");
+                    //if (contactsToUpdateOnly.Any())
+                    //{
+                    //    _logger?.LogInformation($"Started updating contacts NOT to be dialed via Genesys API in contact list with id: {contactListId}");
+                    //    foreach (PostContactsRequest contactToUpdate in contactsToUpdateOnly)
+                    //    {
+                    //        PostContactsToGenesysResponse contactsUpdatedOnly = await _genesysClientService?.UpdateContactInContactList(contactToUpdate, lang, _logger);
+                    //    }
+                    //    _logger?.LogInformation($"Finished updating contacts NOT to be dialed via Genesys API in contact list with id: {contactListId}");
+                    //}
+                    //newContactsToProcess = newContactsToProcess.Where(c => !contactsToUpdateOnly.Any(c2 => c2.Id == c.Id));
 
-                    _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Ended *********");
+                    //// --------------- REFRESH GENESYS CONTACT STATUS TABLE -------------------
+
+                    //_logger?.LogInformation("Started refreshing Genesys Contact Info Reference table");
+                    //IEnumerable<string> refreshGenesysContactInfoResponse = await _dataLayer.ExecuteReader<string>(SQLConstants.RefreshGenesysContactInfo, new(), appConnectionString, _logger);
+                    //_logger?.LogInformation($"Ended refreshing Genesys Contact Info Reference table with result: {refreshGenesysContactInfoResponse}");
+                    //_logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Ended *********");
                 });
 
                 return new OkObjectResult("Task of processing PD Orders in Genesys has been allocated to azure function and see logs for more information about its progress...");
