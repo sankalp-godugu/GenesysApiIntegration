@@ -4,7 +4,7 @@ namespace GenesysContactsProcessJob.Model.Request
 {
     public class PostContactsRequest
     {
-        public string Id { get; set; }
+        public long Id { get; set; }
         public string ContactListId { get; set; }
         public Data Data { get; set; }
         public bool Callable => true;

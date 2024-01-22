@@ -36,7 +36,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
             {
                 await Task.Run(async () =>
                 {
-                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("DataBase:ConnectionStringPROD");
+                    string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("DataBase:ConnectionString");
 
                     // BEGIN TESTING --------------------------------------------------
 
@@ -81,15 +81,25 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     // ------------------ 6pm: INITIATE EXPORT OF CONTACT LIST ----------------------
 
                     _logger?.LogInformation($"Started initiating contact list export via Genesys API for contact list with id:{contactListId}");
-                    //InitiateContactListExportResponse initiateContactListExportResponse = await _genesysClientService?.InitiateContactListExport(lang, _logger);
+                    InitiateContactListExportResponse initiateContactListExportResponse = await _genesysClientService?.InitiateContactListExport(lang, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
                     await Task.Delay(5000);
+
+                    if (DateTime.Now < new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 17, 0, 0))
+                    {
+
+                    }
 
                     // ----------------- GET CONTACTS FROM GENESYS -------------------
 
                     _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
                     IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToProcess = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
+
+                    // write list of contacts from dialer
+                    StreamWriter writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_GET.csv", false, System.Text.Encoding.UTF8);
+                    CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsToProcess);
 
                     // ---------------- REMOVE CONTACTS FROM GENESYS ------------------
 
@@ -99,31 +109,28 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     IEnumerable<GetContactsExportDataFromGenesysResponse> contactsDupes = contactsToProcess.Except(contactsWithoutDupes);
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithDNCCodes = contactsToProcess.ToList()
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithDNCCodesOrDayCountExceeded = contactsToProcess.ToList()
                     .Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)
                                 || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.PhoneNumberStatus.PhoneNumber.LastResult)
                                 || int.Parse(c.Data.DayCount) > 50
                                 || int.Parse(c.Data.AttemptCountTotal) > 45);
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodes.Union(contactsDupes);
-
-                    //TODO: remove later
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsMaxDayCountOrAttemptCountTotal = contactsToRemove
-                    .Where(c => int.Parse(c.Data.DayCount) > 50 || int.Parse(c.Data.AttemptCountTotal) > 45);
+                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodesOrDayCountExceeded.Union(contactsDupes);
 
                     // write duplicates to be scrubbed to file
-                    using (StreamWriter writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Duplicates.csv", false, System.Text.Encoding.UTF8))
-                    using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
-                    {
-                        csv.WriteRecords(contactsDupes);
-                    }
+                    writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_Duplicates.csv", false, System.Text.Encoding.UTF8);
+                    csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsDupes);
 
                     // write DNC records to be scrubbed to file
-                    using (StreamWriter writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_DNC.csv", false, System.Text.Encoding.UTF8))
-                    using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
-                    {
-                        csv.WriteRecords(contactsWithDNCCodes);
-                    }
+                    writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_DNC.csv", false, System.Text.Encoding.UTF8);
+                    csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
+
+                    // write all records to be scrubbed to file
+                    writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
+                    csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
                     Environment.Exit(Environment.ExitCode);
                     //if (contactsToRemove.Any())
