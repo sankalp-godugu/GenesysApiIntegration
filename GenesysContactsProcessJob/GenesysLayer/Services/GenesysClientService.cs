@@ -133,38 +133,22 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             return 1;
         }
 
+        public Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetListFromCsv(string filePath)
+        {
+            IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToScrub = new List<GetContactsExportDataFromGenesysResponse>();
+            if (File.Exists(filePath))
+            {
+                using StreamReader reader = new(File.OpenRead(filePath));
+                using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+                _ = csv.Context.RegisterClassMap<GetContactsExportDataFromGenesysResponseMap>();
+                contactsToScrub = csv.GetRecords<GetContactsExportDataFromGenesysResponse>().ToList();
+            }
+            return Task.FromResult(contactsToScrub);
+        }
+
         #endregion
 
         #region Private Methods
-
-        /// <summary>
-        /// Gets the Genesys http client.
-        /// </summary>
-        /// <returns>Returns the http client to make API requests.</returns>
-        private HttpClient GetGenesysHttpClient()
-        {
-            HttpClient httpClient = _httpClientFactory.CreateClient("MyClient");
-            return httpClient;
-        }
-
-        private async Task<string> GetAuthToken()
-        {
-            using HttpClient httpClient = GetGenesysHttpClient();
-            string tokenUrl = _configuration[ConfigConstants.TokenUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.TokenUrlKey);
-            Uri tokenUri = new(tokenUrl);
-            Dictionary<string, string> form = new()
-            {
-                {"grant_type", _configuration[ConfigConstants.GrantTypeKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.GrantTypeKey)},
-                {"client_id", _configuration[ConfigConstants.ClientIdKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.ClientIdKey)},
-                {"client_secret", _configuration[ConfigConstants.ClientSecretKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.ClientSecretKey)}
-            };
-
-            HttpResponseMessage result = await httpClient.PostAsync(tokenUri, new FormUrlEncodedContent(form));
-            _ = result.EnsureSuccessStatusCode();
-            string response = await result.Content.ReadAsStringAsync();
-            AccessTokenResponse tokenResponse = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
-            return tokenResponse.AccessToken;
-        }
 
         /// <summary>
         /// Gets the API request body for Genesys.
@@ -241,6 +225,35 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         }
 
         /// <summary>
+        /// Gets the Genesys http client.
+        /// </summary>
+        /// <returns>Returns the http client to make API requests.</returns>
+        private HttpClient GetGenesysHttpClient()
+        {
+            HttpClient httpClient = _httpClientFactory.CreateClient("MyClient");
+            return httpClient;
+        }
+
+        private async Task<string> GetAuthToken()
+        {
+            using HttpClient httpClient = GetGenesysHttpClient();
+            string tokenUrl = _configuration[ConfigConstants.TokenUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.TokenUrlKey);
+            Uri tokenUri = new(tokenUrl);
+            Dictionary<string, string> form = new()
+            {
+                {"grant_type", _configuration[ConfigConstants.GrantTypeKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.GrantTypeKey)},
+                {"client_id", _configuration[ConfigConstants.ClientIdKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.ClientIdKey)},
+                {"client_secret", _configuration[ConfigConstants.ClientSecretKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.ClientSecretKey)}
+            };
+
+            HttpResponseMessage result = await httpClient.PostAsync(tokenUri, new FormUrlEncodedContent(form));
+            _ = result.EnsureSuccessStatusCode();
+            string response = await result.Content.ReadAsStringAsync();
+            AccessTokenResponse tokenResponse = JsonConvert.DeserializeObject<AccessTokenResponse>(response);
+            return tokenResponse.AccessToken;
+        }
+
+        /// <summary>
         /// Initiates contact list export
         /// </summary>
         ///  <param name="content">Content.<see cref="StringContent"/></param>
@@ -275,19 +288,6 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 logger.LogError($"Error in Initiate Contact List Export API endpoint with response: {response}");
                 return new InitiateContactListExportResponse();
             }
-        }
-
-        public Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetListFromCsv(string filePath)
-        {
-            IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToScrub = new List<GetContactsExportDataFromGenesysResponse>();
-            if (File.Exists(filePath))
-            {
-                using StreamReader reader = new(File.OpenRead(filePath));
-                using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
-                _ = csv.Context.RegisterClassMap<GetContactsExportDataFromGenesysResponseMap>();
-                contactsToScrub = csv.GetRecords<GetContactsExportDataFromGenesysResponse>().ToList();
-            }
-            return Task.FromResult(contactsToScrub);
         }
 
         /// <summary>
