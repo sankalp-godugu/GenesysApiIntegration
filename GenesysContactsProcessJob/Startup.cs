@@ -37,13 +37,6 @@ namespace GenesysContactsProcessJob
         {
             // Initialize constants
             IConfiguration configuration = builder.GetContext().Configuration;
-            _ = builder.Services.AddHttpClient("MyClient").ConfigurePrimaryHttpMessageHandler(() =>
-            {
-                return new HttpClientHandler()
-                {
-                    AllowAutoRedirect = false
-                };
-            });
             _ = builder.Services.AddApplicationInsightsTelemetry();
             _ = builder.Services.AddSingleton<IDataLayer>((s) =>
             {

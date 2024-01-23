@@ -230,8 +230,8 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <returns>Returns the http client to make API requests.</returns>
         private HttpClient GetGenesysHttpClient()
         {
-            HttpClient httpClient = _httpClientFactory.CreateClient("MyClient");
-            return httpClient;
+            _ = new HttpClientHandler() { AllowAutoRedirect = false };
+            return _httpClientFactory.CreateClient();
         }
 
         private async Task<string> GetAuthToken()
@@ -298,14 +298,17 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <returns>Returns thelist of contacts from Genesys.</returns>
         private async Task<IEnumerable<GetContactsExportDataFromGenesysResponse>> GetContactsFromContactListExportWithQueryArgs(string queryArgs, string lang, ILogger logger)
         {
-            // Gets the Genesys http client.
-            using HttpClient httpClient = GetGenesysHttpClient();
             string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
             string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
-            httpClient.BaseAddress = new(_configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey));
-            Uri requestUri = new($"outbound/contactlists/{contactListId}/export?{queryArgs}");
+            string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
+
+            // HttpClient
+            using HttpClient httpClient = GetGenesysHttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAuthToken());
+            httpClient.BaseAddress = new(baseUrl);
 
             // Make the API request
+            Uri requestUri = new($"outbound/contactlists/{contactListId}/export?{queryArgs}", UriKind.Relative);
             HttpResponseMessage response = await httpClient.GetAsync(requestUri);
 
             // Check if the request was successful
@@ -313,34 +316,44 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             {
                 // Read and deserialize the response content
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Uri temp = response.Headers.Location;
                 GetContactsExportResponse getContactsExportResponse = JsonConvert.DeserializeObject<GetContactsExportResponse>(responseContent);
 
-                // downloading by URI gives HTML
-                // downloading by Location in response header gives raw CSV data
-                WebClient webClient = new();
-                webClient.DownloadFile(getContactsExportResponse.Uri, @"c:\Temp\DownloadedFile_FromApiResponse_URI.txt");
-                webClient.DownloadFile(@"https://prod-usw2-dialer.s3.us-west-2.amazonaws.com/contact-lists/exports/cc136549-8ecd-49f2-a91b-1b2257104041-Aetna_English_145373_145370_CH.csv?response-content-disposition=attachment%3Bfilename%3D%22cc136549-8ecd-49f2-a91b-1b2257104041-Aetna_English_145373_145370_CH.csv%22&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJHMEUCIFzyo6lC46tHzVBwxxlz0TZ8SpwlQFLTURc%2BJAY%2FaklQAiEAzSSaUktSSgggXNy4wrwcVxVFw1rXzidystzioDesRO0qswUIRxAAGgw3NjU2Mjg5ODU0NzEiDNzebPji5c3Yw6Mw9yqQBRTW%2FBvyrQX38m7p2rHOC6vQKrA%2F8n3PRK7B3IfOy3lJCrvDCoNTfSp51ovlw9M5hw78pYZ%2B1Pt6zWLTmmoJgDnzwW2MY5kB7kZ8pMtOivAhdRbfPiAURm1WEGb9ackYDem4pAxu1KZVIRMCJtw9WiizFR90UQqYDmQtguv60HM%2F1b1y7VKVia0BaLEZAxClckKdIBFSpR80qORq24mRdoorO%2FhbusiayK32Tgu4Eau%2BHqlJSIN3EbsFL1K1gdAEwbv4FiK1tBfh6SeCa1RSrJo%2BHMkm1%2BGCn1nemUqEtSAD9UlDAhjQLNJ9tiBrh%2F1fZuB9B%2BfYl8ixz4L0SZjHcjwxqIMEe2q4mCwFcZ%2FI9wP7%2F%2BOvkuCf0scraMlXzpEjy5t2ZSXaN6hvBFtz1oiQLPieyUpW9bY23UTC8jVfvbIMIyIvqK8GYP4XcBL4hrOc6%2FV0GU57wta%2BsTOR3Xf7GrKx8lyC%2FwuGJ2GPkTXsJDYob9554utCS7AxQCOFwWkdcy0OJrHioEIMuemnIr9ZDZlefupv%2FdFPvE6F7YAJxRF7ISyFoVQdHYmJLJgHut6%2FMc7yX%2FjdvDNncTFwis1y02rP5fFnjxOXUIp%2BRZ2QwgU25RvCQk9BD9dcBIPKixb5%2BeROh8kReRWlGrqE0vhmed7mxXofMrQpFBaWXq57kCgbCEiQVWXitdO1tGQBJfjXNqB80o0BO1GgnfH0nzi0mtn%2Fm4AEIT586mcp2JF4haUsQI35Di9pdIUEbAP3U%2FArGMekunQe9yq1%2FE5tZ%2Bp10pI8krurjEPV3d9kb2YQxEIoH%2Fokgd4lx41ME8dZx2BaD1Prc8hRuXIs9dx9PP7VfYYw296uLXDG6jTQUxPyR7BNMIX0ua0GOrEBVQ8gkMIL7pfLUrSMTxIvdQ2yz2Q6hX6WgYQmyG9187WeATdk0%2FTx1NZ6T%2FOte0FJDkhXHaHDbIbMUSC%2FnmBOrJC9%2Fv0Jdh1k47Jdp6EBSIwLckPoEsLvj98gKKbdC1DWylvqcddzzmq2IsWfX7RsQzjemtcx0mjAOqFcAS3UFop57wc2I5NJDTp4%2Bosoa9zrX0JJuh%2FEuPlc2zXBbXhRcja6DCEZ%2BnHaZwq7HNfeO1Lx&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240122T153917Z&X-Amz-SignedHeaders=host&X-Amz-Expires=86400&X-Amz-Credential=ASIA3EQYLGB7WYQJA7WA%2F20240122%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Signature=3bf086903113aa370d0e6dce9f4e517567b8fe6caef92871b8056f71d13eeb0b", @"c:\Temp\DownloadedFile_FromAPIResponseHeaders_Location.txt");
+                response = await httpClient.GetAsync($"{getContactsExportResponse.Uri}?issueRedirect=false&redirectToAuth=false");
+                if (response.IsSuccessStatusCode)
+                {
+                    // Read and deserialize the response content
+                    responseContent = await response.Content.ReadAsStringAsync();
 
-                // this works fine, but have to read the raw CSV data in application memory first, which for smaller data sets is not an issue
-                // larger data sets, this will become a problem (hundreds of thousands of records)
-                int start = getContactsExportResponse.Uri.IndexOf("downloads/") + 10;
-                string downloadId = getContactsExportResponse.Uri[start..];
-                requestUri = new($"downloads/{downloadId}");
-                response = await httpClient.GetAsync(requestUri);
-                Stream responseStream = await response.Content.ReadAsStreamAsync();
-                string responseString = await response.Content.ReadAsStringAsync();
+                    GetContactsDownloadResponse getContactsDownloadResponse = JsonConvert.DeserializeObject<GetContactsDownloadResponse>(responseContent);
 
-                using StreamReader reader = new(responseStream);
-                using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
-                _ = csv.Context.RegisterClassMap<GetContactsExportDataFromGenesysResponseMap>();
-                return csv.GetRecords<GetContactsExportDataFromGenesysResponse>().ToList();
+                    // Download to file
+                    WebClient webClient = new();
+                    webClient.DownloadFile(getContactsDownloadResponse.Url, @"c:\Temp\DownloadAPI_ResponseHeaders_Location.txt");
+                }
+                else
+                {
+                    logger.LogError($"Error in Get Contacts Download URI with response: {response}");
+                }
+
+                response = await httpClient.GetAsync(getContactsExportResponse.Uri);
+                if (response.IsSuccessStatusCode)
+                {
+                    Stream responseStream = await response.Content.ReadAsStreamAsync();
+                    using StreamReader reader = new(responseStream);
+                    using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+                    _ = csv.Context.RegisterClassMap<GetContactsExportDataFromGenesysResponseMap>();
+                    return csv.GetRecords<GetContactsExportDataFromGenesysResponse>().ToList();
+                }
+                else
+                {
+                    logger.LogError($"Error in Get Contacts Data API endpoint with response: {response}");
+                }
             }
             else
             {
-                logger.LogError($"Error in Get Contacts API endpoint with response: {response}");
-                return new List<GetContactsExportDataFromGenesysResponse>();
+                logger.LogError($"Error in Get Contacts Export API endpoint with response: {response}");
             }
+            return new List<GetContactsExportDataFromGenesysResponse>();
         }
 
         /// <summary>

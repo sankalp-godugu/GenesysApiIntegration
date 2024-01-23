@@ -38,39 +38,6 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                 {
                     string appConnectionString = _configuration["DataBase:APPConnectionString"] ?? Environment.GetEnvironmentVariable("DataBase:ConnectionString");
 
-                    // BEGIN TESTING --------------------------------------------------
-
-                    //// 1) read original list
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> listFromDialer = await _genesysClientService?.GetListFromCsv(@"C:\Temp\ListFromDialer.csv");
-
-                    //// 2) compare filtered and original list, removing duplicates from original list ONLY
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> listFromDialerNoDuplicates = listFromDialer
-                    //    .GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
-                    //    .Select(c2 => c2.First());
-
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> temp = listFromDialer
-                    //.GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
-                    //.SelectMany(c2 => c2);
-
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> temp2 = listFromDialer
-                    //.GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
-                    //.Where(g => g.Count() > 1)
-                    //.SelectMany(c2 => c2);
-
-                    //List<GetContactsExportDataFromGenesysResponse> duplicates = listFromDialer.Except(listFromDialerNoDuplicates).Where(c => c.Data.NhMemberId != "0").ToList();
-
-                    //using (StreamWriter writer = new(@"C:\Temp\DuplicatesToRemove.csv", false, System.Text.Encoding.UTF8))
-                    //using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
-                    //{
-                    //    csv.WriteRecords(duplicates); // where values implements IEnumerable
-                    //}
-
-                    //List<string> duplicatesToDelete = duplicates.Select(c => c.Id.ToString()).ToList();
-
-                    //long result = await _genesysClientService?.DeleteContactsFromContactList(duplicatesToDelete, lang, _logger);
-
-                    // END TESTING ----------------------------------------------------------
-
                     _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
                     _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Started **********");
 
@@ -96,8 +63,14 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToProcess = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
 
+                    string dirPath = @$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}";
+                    if (!Directory.Exists(dirPath))
+                    {
+                        _ = Directory.CreateDirectory(dirPath);
+                    }
+
                     // write list of contacts from dialer
-                    StreamWriter writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_GET.csv", false, System.Text.Encoding.UTF8);
+                    StreamWriter writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_GET.csv", false, System.Text.Encoding.UTF8);
                     CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsToProcess);
 
@@ -117,45 +90,24 @@ namespace GenesysContactsProcessJob.TriggerUtilities
 
                     IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodesOrDayCountExceeded.Union(contactsDupes);
 
+
+
                     // write duplicates to be scrubbed to file
-                    writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_Duplicates.csv", false, System.Text.Encoding.UTF8);
+                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_Duplicates.csv", false, System.Text.Encoding.UTF8);
                     csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsDupes);
 
                     // write DNC records to be scrubbed to file
-                    writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_DNC.csv", false, System.Text.Encoding.UTF8);
+                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_DNC.csv", false, System.Text.Encoding.UTF8);
                     csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
                     // write all records to be scrubbed to file
-                    writer = new(@$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
+                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
                     csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
                     Environment.Exit(Environment.ExitCode);
-                    //if (contactsToRemove.Any())
-                    //{
-                    //    _logger?.LogInformation($"Started removing contacts from contact list with id: {contactListId}");
-                    //    IEnumerable<string> contactIds = contactsToRemove.Select(c => c.Id);
-                    //    removeContactsFromGenesysResponse = await _genesysClientService?.DeleteContactsFromContactList(contactIds, lang, _logger);
-                    //    _logger?.LogInformation($"Finished removing contacts from contact list with id: {contactListId}");
-                    //}
-                    //else
-                    //{
-                    //    _logger?.LogInformation($"No contacts to remove from contact list with id: {contactListId}");
-                    //}
-                    //contactsToProcess = contactsToProcess.Except(contactsToRemove);
-
-                    //// ------------------- GET MEMBERS BY LANGUAGE ------------------
-
-                    //Dictionary<string, object> sqlParams = new()
-                    //{
-                    //    { "@lang", lang },
-                    //};
-
-                    //_logger?.LogInformation("Started fetching PD orders for all members");
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> newContactsToProcess = await _dataLayer.ExecuteReader<GetContactsExportDataFromGenesysResponse>(SQLConstants.GetPDAndGenesysInfo, sqlParams, appConnectionString, _logger);
-                    //_logger?.LogInformation($"Ended fetching PD orders with count: {contactsToProcess?.Count()}");
 
                     //// --------------------- ADD CONTACTS TO GENESYS ---------------------
 
