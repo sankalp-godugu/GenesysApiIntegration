@@ -71,7 +71,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     // ----------------- GET CONTACT LIST FROM GENESYS -------------------
 
                     _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
-                    IEnumerable<GetContactListResponse> contactsToProcess = await _genesysClientService?.GetContactList(lang, _logger);
+                    IEnumerable<GetContactListResponse> contactsToProcess = await _genesysClientService?.GetContactList(contactListExpotUriResponse.Uri, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
 
                     // write list of contacts from dialer

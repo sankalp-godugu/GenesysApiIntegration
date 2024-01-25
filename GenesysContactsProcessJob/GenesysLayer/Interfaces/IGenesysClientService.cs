@@ -39,7 +39,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Interfaces
         /// </summary>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns the list of contacts from Genesys.</returns>
-        public Task<IEnumerable<GetContactListResponse>> GetContactList(string lang, ILogger logger);
+        public Task<IEnumerable<GetContactListResponse>> GetContactList(string uri, ILogger logger);
 
         /// <summary>
         /// Adds list of contacts in Genesys asychronously.

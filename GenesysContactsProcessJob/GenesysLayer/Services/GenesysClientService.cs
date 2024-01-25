@@ -98,9 +98,10 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <param name="contactsToAdd">Contacts To Add.<see cref="ContactsToAdd"/></param>
         /// <param name="logger">Logger.<see cref="ILogger"/></param>
         /// <returns>Returns 1 for success.</returns>
-        public async Task<IEnumerable<GetContactListResponse>> GetContactList(string lang, ILogger logger)
+        public async Task<IEnumerable<GetContactListResponse>> GetContactList(string uri, ILogger logger)
         {
-            return await GetContactListWithQueryArgs("download=true", lang, logger);
+            //return await GetContactListWithQueryArgs("download=true", lang, logger);
+            return await GetContactListWithQueryArgs(uri, logger);
         }
 
         /// <summary>
@@ -378,20 +379,15 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             return null;
         }
 
-        private async Task<IEnumerable<GetContactListResponse>> GetContactListWithQueryArgs(string queryArgs, string lang, ILogger logger)
+        private async Task<IEnumerable<GetContactListResponse>> GetContactListWithQueryArgs(string uri, ILogger logger)
         {
-            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
-            string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
-            _ = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
-            string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
-
             // HttpClient
             using HttpClient httpClient = GetGenesysHttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAuthToken());
-            httpClient.BaseAddress = new(baseUrl);
 
             // Make the API request
-            Uri requestUri = new($"outbound/contactlists/{contactListId}/export?{queryArgs}", UriKind.Relative);
+            Uri requestUri = //new($"outbound/contactlists/{contactListId}/export?{queryArgs}", UriKind.Relative);
+            new(uri);
 
             bool isInitialExportComplete = false;
             do
