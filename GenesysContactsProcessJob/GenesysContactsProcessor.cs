@@ -53,7 +53,7 @@ namespace GenesysContactsProcessJob
         [FunctionName("AetnaEnglishContactsProcessor")]
         public async Task ProcessEnglishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, ILogger logger)
         {
-            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.English);
+            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Campaigns.AetnaEnglish);
         }
 
         /// <summary>
@@ -65,7 +65,31 @@ namespace GenesysContactsProcessJob
         [FunctionName("AetnaSpanishContactsProcessor")]
         public async Task ProcessSpanishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, ILogger logger)
         {
-            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Languages.Spanish);
+            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Campaigns.AetnaSpanish);
+        }
+
+        /// <summary>
+        /// Genesys Spanish member contacts processor.
+        /// </summary>
+        /// <param name="req">Request.<see cref="req"/></param>
+        /// <param name="_logger">Logger.<see cref="ILogger"/></param>
+        /// TODO: update timer trigger expression after manual testing is complete
+        [FunctionName("NationsMarketEnglishContactsProcessor")]
+        public async Task ProcessNationsMarketEnglishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, ILogger logger)
+        {
+            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Campaigns.NationsMarketEnglish);
+        }
+
+        /// <summary>
+        /// Genesys Spanish member contacts processor.
+        /// </summary>
+        /// <param name="req">Request.<see cref="req"/></param>
+        /// <param name="_logger">Logger.<see cref="ILogger"/></param>
+        /// TODO: update timer trigger expression after manual testing is complete
+        [FunctionName("NationsMarketSpanishContactsProcessor")]
+        public async Task ProcessNationsMarketSpanishContactsAsync([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest request, ILogger logger)
+        {
+            _ = await GenesysApiUtilities.ProcessGenesysContacts(logger, _configuration, _dataLayer, _genesysClientService, Campaigns.NationsMarketSpanish);
         }
 
         #endregion

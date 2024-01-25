@@ -30,7 +30,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
         /// <param name="_dataLayer">An instance of the <see cref="IDataLayer"/> interface or class for interacting with the data layer.</param>
         /// <param name="_genesysClientService">An instance of the <see cref="IGenesysClientService"/> interface or class for Genesys API service calls.</param>
         /// <returns>An <see cref="IActionResult"/> representing the result of the Genesys contacts processing.</returns>
-        public static async Task<IActionResult> ProcessGenesysContacts(ILogger _logger, IConfiguration _configuration, IDataLayer _dataLayer, IGenesysClientService _genesysClientService, string lang)
+        public static async Task<IActionResult> ProcessGenesysContacts(ILogger _logger, IConfiguration _configuration, IDataLayer _dataLayer, IGenesysClientService _genesysClientService, string campaign)
         {
             try
             {
@@ -41,27 +41,27 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
                     _logger?.LogInformation("********* Member PD Orders => Genesys Contact List Execution Started **********");
 
-                    string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+                    string contactListIdKey = campaign == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
 
                     string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
 
                     // ------------------ 6pm: INITIATE EXPORT OF CONTACT LIST ----------------------
 
                     _logger?.LogInformation($"Started initiating contact list export via Genesys API for contact list with id:{contactListId}");
-                    InitiateContactListExportResponse initiateContactListExportResponse = await _genesysClientService?.InitiateContactListExport(lang, _logger);
+                    InitiateContactListExportResponse initiateContactListExportResponse = await _genesysClientService?.InitiateContactListExport(campaign, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
                     await Task.Delay(5000);
 
                     // ----------------- GET CONTACT LIST EXPORT URI FROM GENESYS -------------------
 
                     _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
-                    GetContactListExportUriResponse contactListExpotUriResponse = await _genesysClientService?.GetContactListExportUri(lang, _logger);
+                    GetContactListExportUriResponse contactListExpotUriResponse = await _genesysClientService?.GetContactListExportUri(campaign, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
 
                     // ----------------- GET CONTACT LIST DOWNLOAD URL FROM GENESYS -------------------
 
                     _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
-                    GetContactListDownloadUrlResponse contactListDownloadUrlResponse = await _genesysClientService?.GetContactListDownloadUrl(contactListExpotUriResponse.Uri, lang, _logger);
+                    GetContactListDownloadUrlResponse contactListDownloadUrlResponse = await _genesysClientService?.GetContactListDownloadUrl(contactListExpotUriResponse.Uri, campaign, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
 
                     // Download to file
@@ -81,7 +81,7 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                         _ = Directory.CreateDirectory(dirPath);
                     }
 
-                    StreamWriter writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_GET.csv", false, System.Text.Encoding.UTF8);
+                    StreamWriter writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{campaign}_GET.csv", false, System.Text.Encoding.UTF8);
                     CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsToProcess);
 

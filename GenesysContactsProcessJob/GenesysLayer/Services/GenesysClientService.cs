@@ -272,7 +272,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <returns>Returns 1 if success.</returns>
         private async Task<InitiateContactListExportResponse> InitiateContactListExportAsync(string lang, ILogger logger)
         {
-            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+            string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
             string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
             string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
@@ -309,7 +309,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         /// <returns>Returns thelist of contacts from Genesys.</returns>
         private async Task<GetContactListExportUriResponse> GetContactListExportUriWithQueryArgs(string queryArgs, string lang, ILogger logger)
         {
-            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+            string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
             string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
             string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
@@ -345,7 +345,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
 
         private async Task<GetContactListDownloadUrlResponse> GetContactListDownloadUrlWithQueryArgs(string uri, string lang, ILogger logger)
         {
-            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+            string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
             _ = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
             string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
@@ -420,7 +420,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         {
             if (!string.IsNullOrWhiteSpace(queryArgs))
             {
-                string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+                string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
                 string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
                 string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
@@ -460,7 +460,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         private async Task<IEnumerable<PostContactListResponse>> AddContactsToContactListWithStringContent(StringContent content, string lang, ILogger logger)
         {
             // Gets the Genesys http client.
-            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+            string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
             string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
             string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
@@ -500,7 +500,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             if (content != null)
             {
                 // Gets the Genesys http client.
-                string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+                string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
                 string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
                 string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
@@ -535,7 +535,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
         private async Task<PostContactListResponse> UpdateContactInContactListWithStringContent(long id, StringContent content, string lang, ILogger logger)
         {
             // Gets the Genesys http client.
-            string contactListIdKey = lang == Languages.English ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
+            string contactListIdKey = lang == Campaigns.AetnaEnglish ? ConfigConstants.ContactListIdAetnaEnglishKey : ConfigConstants.ContactListIdAetnaSpanishKey;
             string contactListId = _configuration[contactListIdKey] ?? Environment.GetEnvironmentVariable(contactListIdKey);
             string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
 
