@@ -3,9 +3,9 @@ using GenesysContactsProcessJob.Model.Response;
 
 namespace GenesysContactsProcessJob.Utilities
 {
-    public class GetContactsExportDataFromGenesysResponseMap_Upload : ClassMap<GetContactsExportDataFromGenesysResponse>
+    public class GetContactListResponseMap : ClassMap<GetContactListResponse>
     {
-        public GetContactsExportDataFromGenesysResponseMap_Upload()
+        public GetContactListResponseMap()
         {
             _ = Map(r => r.Id).Index(0);
             _ = Map(r => r.Data.NhMemberId).Index(1);
@@ -19,6 +19,13 @@ namespace GenesysContactsProcessJob.Utilities
             _ = Map(r => r.Data.DayCount).Index(9);
             _ = Map(r => r.Data.AttemptCountToday).Index(10);
             _ = Map(r => r.Data.AttemptCountTotal).Index(11);
+            _ = Map(r => r.Callable).Index(12);
+            _ = Map(r => r.PhoneNumberStatus.PhoneNumber.Callable).Index(13);
+            _ = Map(r => r.ContactableStatus.Email.Contactable).Index(14);
+            _ = Map(r => r.PhoneNumberStatus.PhoneNumber.LastAttempt).Index(15);
+            _ = Map(r => r.ContactableStatus.Sms.Contactable).Index(16);
+            _ = Map(r => r.PhoneNumberStatus.PhoneNumber.LastResult).Index(17);
+            _ = Map(r => r.WrapUpCode).Index(18);
         }
     }
 }

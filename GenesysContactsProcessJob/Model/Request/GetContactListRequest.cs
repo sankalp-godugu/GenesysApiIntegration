@@ -1,6 +1,6 @@
 ﻿namespace GenesysContactsProcessJob.Model.Request
 {
-    public class GetContactsRequest
+    public class GetContactListRequest
     {
         public string Id { get; set; }
     }

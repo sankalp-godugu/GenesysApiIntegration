@@ -1,6 +1,6 @@
 ﻿namespace GenesysContactsProcessJob.Model.Response
 {
-    public class GetContactsDownloadResponse
+    public class GetContactListDownloadUrlResponse
     {
         public string Url { get; set; }
     }

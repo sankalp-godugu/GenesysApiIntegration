@@ -1,8 +1,9 @@
 ﻿using GenesysContactsProcessJob.Model.Common;
+using System;
 
 namespace GenesysContactsProcessJob.Model.Response
 {
-    public class GetContactsExportDataFromGenesysResponse
+    public class GetContactListResponse
     {
         public string Id { get; set; }
         public Data Data { get; set; }

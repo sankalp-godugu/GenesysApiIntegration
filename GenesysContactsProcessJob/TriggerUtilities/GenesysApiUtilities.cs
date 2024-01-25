@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace GenesysContactsProcessJob.TriggerUtilities
@@ -52,62 +52,71 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
                     await Task.Delay(5000);
 
-                    if (DateTime.Now < new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 17, 0, 0))
-                    {
-
-                    }
-
-                    // ----------------- GET CONTACTS FROM GENESYS -------------------
+                    // ----------------- GET CONTACT LIST EXPORT URI FROM GENESYS -------------------
 
                     _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToProcess = await _genesysClientService?.GetContactsFromContactListExport(lang, _logger);
+                    GetContactListExportUriResponse contactListExpotUriResponse = await _genesysClientService?.GetContactListExportUri(lang, _logger);
                     _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
 
+                    // ----------------- GET CONTACT LIST DOWNLOAD URL FROM GENESYS -------------------
+
+                    _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
+                    GetContactListDownloadUrlResponse contactListDownloadUrlResponse = await _genesysClientService?.GetContactListDownloadUrl(contactListExpotUriResponse.Uri, lang, _logger);
+                    _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
+
+                    // Download to file
+                    WebClient webClient = new();
+                    webClient.DownloadFile(contactListDownloadUrlResponse.Url, @"c:\Temp\ContactList.csv");
+
+                    // ----------------- GET CONTACT LIST FROM GENESYS -------------------
+
+                    _logger?.LogInformation($"Started fetching contacts via Genesys API for contact list id: {contactListId}");
+                    IEnumerable<GetContactListResponse> contactsToProcess = await _genesysClientService?.GetContactList(lang, _logger);
+                    _logger?.LogInformation($"Finished fetching contacts via Genesys API for contact list id: {contactListId}");
+
+                    // write list of contacts from dialer
                     string dirPath = @$"C:\Users\Sankalp.Godugu\OneDrive - NationsBenefits\Documents\Business\Genesys\PROD\{DateTime.Now.Month}-{DateTime.Now.Day}";
                     if (!Directory.Exists(dirPath))
                     {
                         _ = Directory.CreateDirectory(dirPath);
                     }
 
-                    // write list of contacts from dialer
                     StreamWriter writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_GET.csv", false, System.Text.Encoding.UTF8);
                     CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsToProcess);
 
+                    Environment.Exit(Environment.ExitCode);
+
                     // ---------------- REMOVE CONTACTS FROM GENESYS ------------------
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithoutDupes = contactsToProcess.ToList()
-                    .GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
-                    .Select(c2 => c2.First());
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithoutDupes = contactsToProcess.ToList()
+                    //.GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
+                    //.Select(c2 => c2.First());
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsDupes = contactsToProcess.Except(contactsWithoutDupes);
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsDupes = contactsToProcess.Except(contactsWithoutDupes);
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithDNCCodesOrDayCountExceeded = contactsToProcess.ToList()
-                    .Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)
-                                || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.PhoneNumberStatus.PhoneNumber.LastResult)
-                                || int.Parse(c.Data.DayCount) > 50
-                                || int.Parse(c.Data.AttemptCountTotal) > 45);
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithDNCCodesOrDayCountExceeded = contactsToProcess.ToList()
+                    //.Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)
+                    //            || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.PhoneNumberStatus.PhoneNumber.LastResult)
+                    //            || int.Parse(c.Data.DayCount) > 50
+                    //            || int.Parse(c.Data.AttemptCountTotal) > 45);
 
-                    IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodesOrDayCountExceeded.Union(contactsDupes);
+                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodesOrDayCountExceeded.Union(contactsDupes);
 
+                    //// write duplicates to be scrubbed to file
+                    //writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_Duplicates.csv", false, System.Text.Encoding.UTF8);
+                    //csv = new(writer, CultureInfo.InvariantCulture);
+                    //csv.WriteRecords(contactsDupes);
 
+                    //// write DNC records to be scrubbed to file
+                    //writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_DNC.csv", false, System.Text.Encoding.UTF8);
+                    //csv = new(writer, CultureInfo.InvariantCulture);
+                    //csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
-                    // write duplicates to be scrubbed to file
-                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_Duplicates.csv", false, System.Text.Encoding.UTF8);
-                    csv = new(writer, CultureInfo.InvariantCulture);
-                    csv.WriteRecords(contactsDupes);
-
-                    // write DNC records to be scrubbed to file
-                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_DNC.csv", false, System.Text.Encoding.UTF8);
-                    csv = new(writer, CultureInfo.InvariantCulture);
-                    csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
-
-                    // write all records to be scrubbed to file
-                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
-                    csv = new(writer, CultureInfo.InvariantCulture);
-                    csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
-
-                    Environment.Exit(Environment.ExitCode);
+                    //// write all records to be scrubbed to file
+                    //writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
+                    //csv = new(writer, CultureInfo.InvariantCulture);
+                    //csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
                     //// --------------------- ADD CONTACTS TO GENESYS ---------------------
 
