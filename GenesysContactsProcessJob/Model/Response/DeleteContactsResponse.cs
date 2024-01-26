@@ -11,7 +11,7 @@ namespace GenesysContactsProcessJob.Model.Response
         public CallRecords CallRecords { get; set; }
         public bool Callable { get; set; }
         public PhoneNumberStatus PhoneNumberStatus { get; set; }
-        public ContactableStatus ContactableStatus { get; set; }
+        public ContactableBy ContactableStatus { get; set; }
         public DateTime DateCreated { get; set; }
         public string SelfUri { get; set; }
     }

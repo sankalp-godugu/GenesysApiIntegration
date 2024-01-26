@@ -1,5 +1,4 @@
 ﻿using GenesysContactsProcessJob.Model.Common;
-using System;
 
 namespace GenesysContactsProcessJob.Model.Response
 {
@@ -7,10 +6,11 @@ namespace GenesysContactsProcessJob.Model.Response
     {
         public string Id { get; set; }
         public Data Data { get; set; }
-        public bool Callable { get; set; }
-        public PhoneNumberStatus PhoneNumberStatus => new();
-        public ContactableStatus ContactableStatus => new();
-        public string WrapUpCode { get; set; }
-        public string Region { get; set; }
+        public bool ContactCallable { get; set; }
+        public ContactableBy ContactableBy { get; set; }
+        public string ZipCodeAutomaticTimeZone { get; set; }
+        public CallRecords CallRecords { get; set; }
+        public Sms Sms { get; set; }
+        public string AutomaticTimeZone_phoneNumber { get; set; }
     }
 }

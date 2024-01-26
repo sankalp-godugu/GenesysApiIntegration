@@ -24,35 +24,48 @@ namespace GenesysContactsProcessJob.Model.Common
 
     public class PhoneNumber
     {
-        public bool Callable => true;
+        public bool Callable = true;
         public DateTime LastAttempt { get; set; }
         public string LastResult { get; set; }
     }
 
     public class PhoneNumberStatus
     {
-        public PhoneNumber PhoneNumber => new();
+        public PhoneNumber PhoneNumber = new();
     }
 
-    public class ContactableStatus
+    public class ContactableBy
     {
-        public Email Email => new();
-        public Sms Sms => new();
+        public Email Email = new();
+        public Sms Sms = new();
+        public Voice Voice = new();
     }
 
     public class Email
     {
-        public bool Contactable => true;
+        public bool Callable = true;
     }
 
     public class Sms
     {
-        public bool Contactable => true;
+        public bool Callable = true;
+        public string LastAttempt_PhoneNumber { get; set; }
+        public string LastResult_PhoneNumber { get; set; }
+        public bool PhoneNumber { get; set; }
+    }
+
+    public class Voice
+    {
+        public bool Callable = true;
+        public bool PhoneNumber = true;
     }
 
     public class CallRecords
     {
-        public PhoneNumber PhoneNumber { get; set; }
+        public string LastAttempt_PhoneNumber { get; set; }
+        public string LastResult_PhoneNumber { get; set; }
+        public string LastAgentWrapup_PhoneNumber { get; set; }
+
     }
 
     public class ConfigurationOverrides

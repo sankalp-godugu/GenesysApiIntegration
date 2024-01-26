@@ -384,9 +384,13 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
             // HttpClient
             using HttpClient httpClient = GetGenesysHttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAuthToken());
+            //string baseUrl = _configuration[ConfigConstants.BaseUrlKey] ?? Environment.GetEnvironmentVariable(ConfigConstants.BaseUrlKey);
+            //httpClient.BaseAddress = new(baseUrl);
 
             // Make the API request
-            Uri requestUri = //new($"outbound/contactlists/{contactListId}/export?{queryArgs}", UriKind.Relative);
+            string contactListIdKey = ConfigConstants.ContactListIdAetnaEnglishKey;
+            string contactListId = Environment.GetEnvironmentVariable(contactListIdKey);
+            Uri requestUri = //new($"outbound/contactlists/{contactListId}/export?download=true", UriKind.Relative);
             new(uri);
 
             bool isInitialExportComplete = false;
@@ -396,6 +400,7 @@ namespace GenesysContactsProcessJob.GenesysLayer.Services
                 if (response.IsSuccessStatusCode)
                 {
                     isInitialExportComplete = true;
+                    string temp = await response.Content.ReadAsStringAsync();
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
                     using StreamReader reader = new(responseStream);
                     using CsvReader csv = new(reader, CultureInfo.InvariantCulture);

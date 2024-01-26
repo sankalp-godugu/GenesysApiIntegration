@@ -9,7 +9,7 @@ namespace GenesysContactsProcessJob.Model.Response
         public Data Data { get; set; }
         public bool Callable => true;
         public PhoneNumberStatus PhoneNumberStatus { get; set; }
-        public ContactableStatus ContactableStatus { get; set; }
+        public ContactableBy ContactableStatus { get; set; }
         public ConfigurationOverrides ConfigurationOverrides { get; set; }
         public string DateCreated { get; set; }
         public string SelfUri { get; set; }

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -85,38 +86,37 @@ namespace GenesysContactsProcessJob.TriggerUtilities
                     CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
                     csv.WriteRecords(contactsToProcess);
 
-                    Environment.Exit(Environment.ExitCode);
-
                     // ---------------- REMOVE CONTACTS FROM GENESYS ------------------
 
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithoutDupes = contactsToProcess.ToList()
-                    //.GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
-                    //.Select(c2 => c2.First());
+                    IEnumerable<GetContactListResponse> contactsWithoutDupes = contactsToProcess
+                    .GroupBy(c => new { c.Data.NhMemberId, c.Data.DischargeDate })
+                    .Select(c2 => c2.First());
 
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsDupes = contactsToProcess.Except(contactsWithoutDupes);
+                    IEnumerable<GetContactListResponse> contactsDupes = contactsToProcess.Except(contactsWithoutDupes);
 
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsWithDNCCodesOrDayCountExceeded = contactsToProcess.ToList()
-                    //.Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.WrapUpCode)
-                    //            || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.PhoneNumberStatus.PhoneNumber.LastResult)
-                    //            || int.Parse(c.Data.DayCount) > 50
-                    //            || int.Parse(c.Data.AttemptCountTotal) > 45);
+                    IEnumerable<GetContactListResponse> contactsWithDNCCodesOrDayCountExceeded = contactsToProcess.ToList()
+                    .Where(c => LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.CallRecords.LastResult_PhoneNumber)
+                                || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.CallRecords.LastAttempt_PhoneNumber)
+                                || LastResultAndWrapUpCodes.WrapUpCodesForDeletion.Contains(c.CallRecords.LastAgentWrapup_PhoneNumber)
+                                || int.Parse(c.Data.DayCount) > 50
+                                || int.Parse(c.Data.AttemptCountTotal) > 45);
 
-                    //IEnumerable<GetContactsExportDataFromGenesysResponse> contactsToRemove = contactsWithDNCCodesOrDayCountExceeded.Union(contactsDupes);
+                    IEnumerable<GetContactListResponse> contactsToRemove = contactsWithDNCCodesOrDayCountExceeded.Union(contactsDupes);
 
-                    //// write duplicates to be scrubbed to file
-                    //writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_Duplicates.csv", false, System.Text.Encoding.UTF8);
-                    //csv = new(writer, CultureInfo.InvariantCulture);
-                    //csv.WriteRecords(contactsDupes);
+                    // write duplicates to be scrubbed to file
+                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{campaign}_Duplicates.csv", false, System.Text.Encoding.UTF8);
+                    csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsDupes);
 
-                    //// write DNC records to be scrubbed to file
-                    //writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_DNC.csv", false, System.Text.Encoding.UTF8);
-                    //csv = new(writer, CultureInfo.InvariantCulture);
-                    //csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
+                    // write DNC records to be scrubbed to file
+                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{campaign}_DNC.csv", false, System.Text.Encoding.UTF8);
+                    csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
-                    //// write all records to be scrubbed to file
-                    //writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{lang}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
-                    //csv = new(writer, CultureInfo.InvariantCulture);
-                    //csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
+                    // write all records to be scrubbed to file
+                    writer = new(@$"{dirPath}\{DateTime.Now.Month}-{DateTime.Now.Day}_Aetna_{campaign}_AllScrubbed.csv", false, System.Text.Encoding.UTF8);
+                    csv = new(writer, CultureInfo.InvariantCulture);
+                    csv.WriteRecords(contactsWithDNCCodesOrDayCountExceeded);
 
                     //// --------------------- ADD CONTACTS TO GENESYS ---------------------
 
