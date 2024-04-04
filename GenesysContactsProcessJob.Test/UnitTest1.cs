@@ -1,4 +1,4 @@
-namespace GenesysContactsProcessJob.Test
+namespace GenesysContactsProcessJob.Tests.Unit
 {
     [TestClass]
     public class UnitTest1
